@@ -25,6 +25,10 @@ HOUSEHOLD_LABELS_FILE = HOUSEHOLD_DIR / "labels.txt"   # one label per line
 HOUSEHOLD_INPUT_SIZE = 224
 # =========================
 
+# Fixed ImageNet normalization to avoid weights.meta access differences across versions
+IMAGENET_MEAN = [0.485, 0.456, 0.406]
+IMAGENET_STD  = [0.229, 0.224, 0.225]
+
 
 def draw_box(img, box, label, score, hh_text="", color=(0, 200, 0)):
     x1, y1, x2, y2 = [int(v) for v in box]
@@ -64,8 +68,7 @@ class HouseholdClassifier:
         self.tf = T.Compose([
             T.Resize((HOUSEHOLD_INPUT_SIZE, HOUSEHOLD_INPUT_SIZE)),
             T.ToTensor(),
-            T.Normalize(mean=[0.485, 0.456, 0.406],
-                        std =[0.229, 0.224, 0.225])
+            T.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
         ])
 
     def classify(self, roi_bgr: np.ndarray):
@@ -87,19 +90,17 @@ def main():
     # Keep CPU threads modest on Pi 5
     torch.set_num_threads(min(4, max(1, torch.get_num_threads())))
 
-    # Load detector
+    # Load detector (pretrained on COCO)
     weights = SSDLite320_MobileNet_V3_Large_Weights.DEFAULT
-    categories = weights.meta["categories"]
-    mean = weights.meta["mean"]
-    std = weights.meta["std"]
+    categories = weights.meta.get("categories", [str(i) for i in range(91)])  # fallback
 
-    # Build model
     model = ssdlite320_mobilenet_v3_large(weights=weights).eval().to("cpu")
 
-    # We'll explicitly resize to 320x320 and use a simple normalize transform
+    # Explicit, version-robust 320x320 preprocessing
     det_tf = T.Compose([
+        T.Resize((320, 320)),
         T.ToTensor(),
-        T.Normalize(mean=mean, std=std),
+        T.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
     ])
 
     # PiCamera2 setup
@@ -122,17 +123,18 @@ def main():
             Hf, Wf = frame_bgr.shape[:2]
 
             # Prepare 320x320 input
-            img320 = cv2.resize(frame_rgb, (320, 320), interpolation=cv2.INTER_LINEAR)
-            pil320 = torchvision.transforms.functional.to_pil_image(img320)
+            pil320 = torchvision.transforms.functional.to_pil_image(
+                cv2.resize(frame_rgb, (320, 320), interpolation=cv2.INTER_LINEAR)
+            )
             inp = det_tf(pil320).unsqueeze(0)  # [1,3,320,320]
 
             with torch.no_grad():
                 output = model(inp)[0]  # dict with 'boxes','labels','scores'
 
-            # Boxes are in 320x320 coordinates → scale back to original (Wf,Hf)
-            boxes = output["boxes"].cpu().numpy()
-            labels = output["labels"].cpu().numpy()
-            scores = output["scores"].cpu().numpy()
+            # Boxes are in 320x320 coords → scale back to original (Wf,Hf)
+            boxes = output["boxes"].cpu().numpy() if "boxes" in output else np.empty((0, 4))
+            labels = output["labels"].cpu().numpy() if "labels" in output else np.empty((0,), dtype=int)
+            scores = output["scores"].cpu().numpy() if "scores" in output else np.empty((0,))
 
             keep = scores > 0.25
             boxes, labels, scores = boxes[keep], labels[keep], scores[keep]
@@ -140,21 +142,17 @@ def main():
             sx = Wf / 320.0
             sy = Hf / 320.0
             if boxes.size > 0:
-                # scale coords
-                boxes[:, [0, 2]] *= sx
-                boxes[:, [1, 3]] *= sy
+                boxes[:, [0, 2]] = np.clip(boxes[:, [0, 2]] * sx, 0, Wf - 1)
+                boxes[:, [1, 3]] = np.clip(boxes[:, [1, 3]] * sy, 0, Hf - 1)
 
             for box, lab, sc in zip(boxes, labels, scores):
-                x1, y1, x2, y2 = [max(0, int(v)) for v in box]
+                x1, y1, x2, y2 = [int(v) for v in box]
                 name = categories[int(lab)] if int(lab) < len(categories) else str(int(lab))
 
                 hh_text = ""
-                if hh.enabled:
-                    # robust crop
-                    x2c, y2c = min(Wf, x2), min(Hf, y2)
-                    if x2c > x1 and y2c > y1:
-                        roi = frame_bgr[y1:y2c, x1:x2c]
-                        hh_text = hh.classify(roi)
+                if hh.enabled and x2 > x1 and y2 > y1:
+                    roi = frame_bgr[y1:y2, x1:x2]
+                    hh_text = hh.classify(roi)
 
                 draw_box(frame_bgr, (x1, y1, x2, y2), name, float(sc), hh_text=hh_text)
 
@@ -165,7 +163,7 @@ def main():
 
             cv2.putText(frame_bgr, f"FPS: {fps_s:.1f}", (10, 24),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
-            cv2.imshow("SSDLite320_MobileNetV3 + Household", frame_bgr)
+            cv2.imshow("SSDLite320_MobileNetV3 + Household (fixed)", frame_bgr)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
