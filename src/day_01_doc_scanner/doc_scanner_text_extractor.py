@@ -112,7 +112,8 @@ try:
         bot = np.hstack([np.zeros_like(small_orig), small_ocr])
         out = np.vstack([top, bot])
 
-        cv2.imshow("Orig | Warp        Blank | OCR Annotated", out)
+        cv2.imshow("Orig ", frame)
+        cv2.imshow("OCR Annotated", annotated)
 
         key = cv2.waitKey(1)
         if key == ord('q'):

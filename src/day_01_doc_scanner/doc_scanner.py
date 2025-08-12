@@ -14,7 +14,7 @@ import numpy as np
 from picamera2 import Picamera2
 
 # — Parameters —
-PREV_W, PREV_H       = 640, 480
+PREV_W, PREV_H       = 1280, 720
 FULL_W, FULL_H       = 4056, 3040
 BLUR_KSIZE           = (5, 5)
 CANNY_LOW, CANNY_HIGH= 50, 150
@@ -63,6 +63,8 @@ try:
     while True:
         # -- 1) Grab preview frame and detect quad --
         frame = picam.capture_array()
+        # cv2.imshow("High-Res Scan", frame)
+
         gray  = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         blur  = cv2.GaussianBlur(gray, BLUR_KSIZE, 0)
         edges = cv2.Canny(blur, CANNY_LOW, CANNY_HIGH,
