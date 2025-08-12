@@ -10,6 +10,8 @@ BLUR_KSIZE       = (5,5)
 CANNY_LOW, CANNY_HIGH = 50, 150
 CONTOUR_APPROX_EPS= 0.02        # % of perimeter
 WIDTH, HEIGHT    = 3040, 4056   # scan resolution
+# WIDTH, HEIGHT    = 1280, 1920   # scan resolution
+activate_OCR = True
 # -------------------------------
 
 def order_quad(pts):
@@ -81,39 +83,33 @@ try:
             rgb_warp, output_type=pytesseract.Output.DICT
         )
 
-        # 5) Overlay OCR text on a copy of the warp
-        annotated = warp.copy()
-        n_boxes = len(data["level"])
-        for i in range(n_boxes):
-            text = data["text"][i].strip()
-            if not text:
-                continue
-            x, y, w, h = (data["left"][i],
-                          data["top"][i],
-                          data["width"][i],
-                          data["height"][i])
-            # draw bounding box (optional)
-            cv2.rectangle(annotated,
-                          (x, y), (x+w, y+h),
-                          (0,255,0), 2)
-            # overlay text just above the box
-            cv2.putText(annotated, text,
-                        (x, y-10),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        1, (0,255,0), 2,
-                        lineType=cv2.LINE_AA)
+        if(activate_OCR):
+            # 5) Overlay OCR text on a copy of the warp
+            annotated = warp.copy()
+            n_boxes = len(data["level"])
+            for i in range(n_boxes):
+                text = data["text"][i].strip()
+                if not text:
+                    continue
+                x, y, w, h = (data["left"][i],
+                              data["top"][i],
+                              data["width"][i],
+                              data["height"][i])
+                # draw bounding box (optional)
+                cv2.rectangle(annotated,
+                              (x, y), (x+w, y+h),
+                              (0,255,0), 2)
+                # overlay text just above the box
+                cv2.putText(annotated, text,
+                            (x, y-10),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            1, (0,255,0), 2,
+                            lineType=cv2.LINE_AA)
 
-        # 6) Display side by side
-        small_orig = cv2.resize(frame,   (480,720))
-        small_warp = cv2.resize(warp,    (480,720))
-        small_ocr  = cv2.resize(annotated,
-                                (480,720))
-        top = np.hstack([small_orig, small_warp])
-        bot = np.hstack([np.zeros_like(small_orig), small_ocr])
-        out = np.vstack([top, bot])
+            cv2.imshow("OCR Annotated", annotated)
 
         cv2.imshow("Orig ", frame)
-        cv2.imshow("OCR Annotated", annotated)
+        cv2.imshow("scan", warp)
 
         key = cv2.waitKey(1)
         if key == ord('q'):
