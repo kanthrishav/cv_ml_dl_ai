@@ -204,8 +204,8 @@ In this section I will stick to installing only those libraries that are absolut
 			cv2.destroyAllWindows()
 			'''
    
-			iii. A window will open up. This will be the imshow window of oepncv module showing your video feed. You can close it by pressing 'q'.
-			iv. I have understood that on RPI its better to let picamera2 get the raw feed and then pass it to cv2 for all tasks further down the line.
+	iii. A window will open up. This will be the imshow window of oepncv module showing your video feed. You can close it by pressing 'q'.
+	iv. I have understood that on RPI its better to let picamera2 get the raw feed and then pass it to cv2 for all tasks further down the line.
 	
 	
 If all these steps pass, I believe you are done with the setup and can follow along with the computer vision tasks performed by the codes present in this sub-repo.
