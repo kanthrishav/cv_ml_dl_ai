@@ -3,16 +3,16 @@
 This is the setup guide for Raspberry Pi 5 8 GB running the recommended version of Bookworm OS, which is meant for only python based development of computer vision tasks. For C++ based usage, I may create a different setup guide due to the compatibility issues between multiple libraries.
 
 List of Hardware components used for this task
-	1. Raspberry Pi 5 Model B 8 GB RAM
-	2. Raspberry Pi 5 Official 27W Power Supply PD Adapter 5.1V 5A USB-C
-	3. Active Cooler for Raspberry 5 with 30mm PWM 4-Pin Cooling Fan Pi 5 Heatsink with Thermal Tape
-	4. microSD card (64 GB) Class 10, UHS-I, U1 Card
-	5. Camera - Raspberry Pi 5Mp AGP Gddr3 Camera Board Module (basic one)
-	6. Camera - Official Raspberry Pi AI Camera with SONY IMX500 Sensor
-	7. Camera - Raspberry Pi High Quality Camera with Interchangeable Lens Base
-	8. Raspberry Pi Camera Cable Standard - Mini - 300mm
-	9. USB microSD card reader
-	10. Laptop (Windows)
+1. Raspberry Pi 5 Model B 8 GB RAM
+2. Raspberry Pi 5 Official 27W Power Supply PD Adapter 5.1V 5A USB-C
+3. Active Cooler for Raspberry 5 with 30mm PWM 4-Pin Cooling Fan Pi 5 Heatsink with Thermal Tape
+4. microSD card (64 GB) Class 10, UHS-I, U1 Card
+5. Camera - Raspberry Pi 5Mp AGP Gddr3 Camera Board Module (basic one)
+6. Camera - Official Raspberry Pi AI Camera with SONY IMX500 Sensor
+7. Camera - Raspberry Pi High Quality Camera with Interchangeable Lens Base
+8. Raspberry Pi Camera Cable Standard - Mini - 300mm
+9. USB microSD card reader
+10. Laptop (Windows)
 
 (Since I am located in India, most of the products were purchased from either Robocraze or Amazon)
 
@@ -24,19 +24,19 @@ Overall sequence of steps used for the setup are as follows :
 	5. Testing the camera
 
 # FLASHING THE OS (on the Laptop)
-	1. Insert the microSD in the USB card reader which is plugged into your laptop, and format it.
-	2. Download and install the free Raspberry Pi Imager Software from the official website of RPI https://www.raspberrypi.com/software/
-	3. Launch the RPI Imager
+1. Insert the microSD in the USB card reader which is plugged into your laptop, and format it.
+2. Download and install the free Raspberry Pi Imager Software from the official website of RPI https://www.raspberrypi.com/software/
+3. Launch the RPI Imager
 	<img width="855" height="602" alt="image" src="https://github.com/user-attachments/assets/520314f9-ea3a-478e-a395-42d17599bf38" />
 
-		a. Click "Choose Device" -> select "Raspberry Pi 5, 500 and Compute Module 5"
-		b. Click "Choose OS" ->  select "Respberry Pi IS (64 -bit) :  A port of Debian Bookworm with the Raspberry Pi Desktop (Recommended)"
-		c. Click "Choose Storage" -> select your microSD card (sometimes, it takes time for the Imager to find your microSD card mount)
-		d. Click Next
-		e. Upon clicking next you will see these options
-			i. <img width="860" height="828" alt="image" src="https://github.com/user-attachments/assets/982246c3-acab-4426-9600-e237837b5066" />
-			ii. Click on "Edit Settings" - > Three tabs will be there General, Services and Options
-				1) In the General Tab check the options
+ 1. Click "Choose Device" -> select "Raspberry Pi 5, 500 and Compute Module 5"
+ 2. Click "Choose OS" ->  select "Respberry Pi IS (64 -bit) :  A port of Debian Bookworm with the Raspberry Pi Desktop (Recommended)"
+ 3. Click "Choose Storage" -> select your microSD card (sometimes, it takes time for the Imager to find your microSD card mount)
+ 4. Click Next
+ 5. Upon clicking next you will see these options
+ 	<img width="860" height="828" alt="image" src="https://github.com/user-attachments/assets/982246c3-acab-4426-9600-e237837b5066" />
+ 6. Click on "Edit Settings" - > Three tabs will be there General, Services and Options
+	1) In the General Tab check the options
 				<img width="1125" height="1035" alt="image" src="https://github.com/user-attachments/assets/6501c704-1b27-4f65-ac18-4a30c2ad19fb" />
 
 					a) Check Set hostname : then provide a name for your pi (you can choose anything). Lets say we used "pi" as the hostname
