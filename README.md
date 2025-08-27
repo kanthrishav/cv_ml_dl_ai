@@ -1,4 +1,4 @@
-HARDWARE, SETUP AND INSTALLATIONS
+# HARDWARE, SETUP AND INSTALLATIONS
 
 This is the setup guide for Raspberry Pi 5 8 GB running the recommended version of Bookworm OS, which is meant for only python based development of computer vision tasks. For C++ based usage, I may create a different setup guide due to the compatibility issues between multiple libraries.
 
@@ -23,34 +23,35 @@ Overall sequence of steps used for the setup are as follows :
 	4. Libraries installations
 	5. Testing the camera
 
-FLASHING THE OS (on the Laptop)
-
+# FLASHING THE OS (on the Laptop)
 	1. Insert the microSD in the USB card reader which is plugged into your laptop, and format it.
 	2. Download and install the free Raspberry Pi Imager Software from the official website of RPI https://www.raspberrypi.com/software/
 	3. Launch the RPI Imager
-	
-	
-	
+	<img width="855" height="602" alt="image" src="https://github.com/user-attachments/assets/520314f9-ea3a-478e-a395-42d17599bf38" />
+
 		a. Click "Choose Device" -> select "Raspberry Pi 5, 500 and Compute Module 5"
 		b. Click "Choose OS" ->  select "Respberry Pi IS (64 -bit) :  A port of Debian Bookworm with the Raspberry Pi Desktop (Recommended)"
 		c. Click "Choose Storage" -> select your microSD card (sometimes, it takes time for the Imager to find your microSD card mount)
 		d. Click Next
 		e. Upon clicking next you will see these options
-			i. 
+			i. <img width="860" height="828" alt="image" src="https://github.com/user-attachments/assets/982246c3-acab-4426-9600-e237837b5066" />
 			ii. Click on "Edit Settings" - > Three tabs will be there General, Services and Options
 				1) In the General Tab check the options
-				
+				<img width="1125" height="1035" alt="image" src="https://github.com/user-attachments/assets/6501c704-1b27-4f65-ac18-4a30c2ad19fb" />
+
 					a) Check Set hostname : then provide a name for your pi (you can choose anything). Lets say we used "pi" as the hostname
 					b) Check Set username and password : username may or may not same as the hostname (up to you), provide a password. Lets say we used "pi" as the username as well.
 					c) Check Configure wireless LAN : SSID is the name of your Wifi, so provide SSID and wifi password
 					d) Check locale settings : these usually get populated on its own, if not you can make your selection
 				2) In the Services tab
-				
+				<img width="1130" height="1539" alt="image" src="https://github.com/user-attachments/assets/c7dff5b9-ce46-4b42-af10-fbfdccff7e38" />
+
 					a) Check "Enable SSH"
 					b) You can either go with password authentication or allow public-key authentication only
 						i) For public key authentication only, you will need to generate a public key
 				3) In the Options tab
-				
+				<img width="1126" height="423" alt="image" src="https://github.com/user-attachments/assets/7d997883-e9f9-488d-8b42-dc544ab937ea" />
+
 					a) These will be checked by default, if you can check them as well.
 				4) Click "SAVE"
 				5) Then you will get a warning saying that all the data on your microSD will be erased, go ahead and press Continue
@@ -65,31 +66,34 @@ FLASHING THE OS (on the Laptop)
 				7) Wait for it to finish
 	
 	
-	FIRST BOOTUP (on RPI)
+# FIRST BOOTUP (on RPI)
 	
 		1. Insert the microSD card with the flashed OS into RPI
 		2. Connect the power cable
 		3. We have already setup wifi so you do not need Ethernet LAN connection, but if you want, you can attach that too
 		4. We have already enabled SSH so you do not need a separate display. But if you want you can attach a display using a microHDMI to HDMI cable, plus keyboard and mouse. 
 		5. Download and install an IP scanner software like Angry IP Scanner.
-			i. 
+			i. <img width="1176" height="921" alt="image" src="https://github.com/user-attachments/assets/7d02c7b9-fd4a-4669-9392-fb1553373176" />
+
 			ii. Click "Start"
 			iii. It will start searching for all the devices currently present in your network within the default subnet range given under "IP Range"
 			iv. After the search ends, find your RPI with the hostname that you had given and make a note of the IP address of your RPI
-		
+			<img width="1221" height="1081" alt="image" src="https://github.com/user-attachments/assets/f89e50d0-7490-4c64-b9ae-89755b91a347" />
+
 			
-			i. Alternatively, instead of using a third party software like the Angry IIP Scanner, you can search for the IP of your RPI using either your router's DHCP client list or by running this command on your terminal in your laptop "namp -sP 192.168.0.0/255"
-			ii. Lets say you found that the IP address of your RPI is "192.168.0.105"
+			v. Alternatively, instead of using a third party software like the Angry IIP Scanner, you can search for the IP of your RPI using either your router's DHCP client list or by running this command on your terminal in your laptop "namp -sP 192.168.0.0/255"
+			vi. Lets say you found that the IP address of your RPI is "192.168.0.105"
 		6. Open a terminal in your laptop (preferably MobaXterm in Windows)
 			i. Run the command "ssh pi2pi.local" or "ssh pi@192.168.0.102"
 			ii. Enter the password
 			iii. And you will be in
-			iv. 
+			iv. <img width="952" height="303" alt="image" src="https://github.com/user-attachments/assets/2b8c52c4-5415-4a53-9ae5-a35ca96fbb3f" />
+
 		7. Run "sudo apt update && sudo apt full-upgrade -y"
 			i. And once this ends, reboot your RPI using "sudo reboot"
 	
 	
-	SETTING UP VNC
+# SETTING UP VNC
 	
 		1. Once the RPI is up, in your laptop terminal run "sudo raspi-config"
 		2. Select "Interface Options" -> Enable VNC (or something like that) -> Enable -> Yes
@@ -97,19 +101,22 @@ FLASHING THE OS (on the Laptop)
 			i. Once installed, open the RealVNC Viewer
 			ii. On the top left corner, click File -> New connection
 			
-			
+			<img width="1117" height="809" alt="image" src="https://github.com/user-attachments/assets/be8f00a3-dcfd-40ff-85e3-a5ed50f99636" />
+			<img width="583" height="796" alt="image" src="https://github.com/user-attachments/assets/1e09b1e2-72e6-4978-8e4f-806f4a8677a3" />
+
 			
 			iii. Enter the hostname or the IP address of your RPI
 			iv. You can give it a Name which is just a name to identify the device within RealVNC alone
 			v. Make sure that the options that you see checked off in the images are checked off for you too
 			vi. And then press ok
 			vii. You will see your pi added as a connection in the RealVNC Viewer like this
-			viii. 
+			viii. <img width="249" height="208" alt="image" src="https://github.com/user-attachments/assets/2b26ae7a-5b82-4ee2-9db9-c717ac1e500f" />
+
 			ix. Right click on it -> Connect
 			x. And you will able to view the desktop of your RPI in the RealVNC Viewer
 	
 	
-	LIBRARIES INSTALLATION (Bare minimum but really clean)
+# LIBRARIES INSTALLATION (Bare minimum but really clean)
 	
 	In this section I will stick to installing only those libraries that are absolutely needed for the tasks performed in this sub-repo. Whatever is installed as a package, make sure to install them directly as a package and do not go for building from the source unless you know how to handle the compatibility issues that may come up.
 	
@@ -130,13 +137,12 @@ FLASHING THE OS (on the Laptop)
 		2. Attach the Camera cable to the 5MP RPI camera
 			i. This is a very simple step but I have found that I have made mistakes many times
 			ii. Your camera cable for RPI 5 would look something like this
-			iii. 
-			
-			iv. 
+			iii. <img width="708" height="649" alt="image" src="https://github.com/user-attachments/assets/dbaf7d30-934c-43b6-b65b-a761756f2caa" />
+			iv. <img width="818" height="753" alt="image" src="https://github.com/user-attachments/assets/e86e1ebe-40e4-4b69-97cb-92a9eda0d70c" />
 			v. The RPI 5 has a narrower CSI port than the previous versions of RPI. So the narrower of the ends is meant for RPI CSI port and the other one for the camera. There is a high chance that the cable that your camera came with is not compatible with the CSI port of the RPI 5. You can refer to the attached images to understand exactly what a RPI 5 camera cable looks like.
 			vi. The cable (either end) has two sides to it - one will have the copper wire ends (golden colour) and the other side will blacked out or blued out.
 			vii. The CSI port on your RPI will look like this
-			viii. 
+			viii. <img width="529" height="417" alt="image" src="https://github.com/user-attachments/assets/c3d40339-867d-4034-b7a5-17ef6814b114" />
 			ix. Notice that the CSI port has two side as well - one with the wires and one without the wires. 
 			x. Pull the CSI port attachment cap gently (it will come up slightly)
 			xi. While connecting the cable to the CSI port, you need to make sure that the copper wired end of the cable is facing or is in contact with the wired side of the CSI port on the RPI
@@ -163,7 +169,8 @@ FLASHING THE OS (on the Laptop)
 			i. You can check whether your installed picamera2 library works or not and whether your are able to pass the feed captured by picamera2 to opencv object
 			ii. You can run this small script
 			
-			from picamera2 import Picamera2
+			'''
+   			from picamera2 import Picamera2
 			import cv2
 			
 			picam2 = Picamera2()
@@ -179,7 +186,8 @@ FLASHING THE OS (on the Laptop)
 			
 			picam2.stop()
 			cv2.destroyAllWindows()
-			
+			'''
+   
 			iii. A window will open up. This will be the imshow window of oepncv module showing your video feed. You can close it by pressing 'q'.
 			iv. I have understood that on RPI its better to let picamera2 get the raw feed and then pass it to cv2 for all tasks further down the line.
 	
