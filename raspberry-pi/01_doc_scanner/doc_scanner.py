@@ -62,13 +62,18 @@ try:
     while True:
         # -- 1) Grab preview frame and detect quad --
         frame = picam.capture_array()
-        cv2.imshow("feed", frame)
 
-        '''
+        cv2.imshow("orig feed", frame)
+
         gray  = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        cv2.imshow("gray feed", frame)
         blur  = cv2.GaussianBlur(gray, BLUR_KSIZE, 0)
+        cv2.imshow("blur feed", frame)
+
         edges = cv2.Canny(blur, CANNY_LOW, CANNY_HIGH,
                          apertureSize=3, L2gradient=True)
+        cv2.imshow("edges feed", frame)
+        '''
 
         # find contours & approximate 4-point candidates
         cnts,_   = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
