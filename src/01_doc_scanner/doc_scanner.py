@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Two‐Stage Document Scanner with Simultaneous Preview + High‐Res Scan Windows
 
