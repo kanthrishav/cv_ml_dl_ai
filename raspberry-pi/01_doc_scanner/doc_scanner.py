@@ -13,7 +13,7 @@ import numpy as np
 from picamera2 import Picamera2
 
 # — Parameters —
-PREV_W, PREV_H       = 1280, 720
+PREV_W, PREV_H       = 1280, 1080
 FULL_W, FULL_H       = 4056, 3040
 BLUR_KSIZE           = (5, 5)
 CANNY_LOW, CANNY_HIGH= 50, 150
@@ -62,8 +62,9 @@ try:
     while True:
         # -- 1) Grab preview frame and detect quad --
         frame = picam.capture_array()
-        # cv2.imshow("High-Res Scan", frame)
+        cv2.imshow("feed", frame)
 
+        '''
         gray  = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         blur  = cv2.GaussianBlur(gray, BLUR_KSIZE, 0)
         edges = cv2.Canny(blur, CANNY_LOW, CANNY_HIGH,
@@ -97,8 +98,8 @@ try:
             cv2.polylines(vis, [pts], True, (0,255,0), 2)
         cv2.imshow("Original Preview", vis)
 
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('c') and quad is not None:
+
+        if cv2.waitKey(1) & 0xFF == ord('c') and quad is not None:
             # -- 2) Capture full-res still and warp --
             picam.stop()
             picam.configure(still_cfg)
@@ -140,9 +141,11 @@ try:
             w = 800
             h = int(800 * FULL_H / FULL_W)
             preview = cv2.resize(clean, (w, h))
-            cv2.imshow("High-Res Scan", preview)
+            cv2.imshow("High-Res Scan", clean)
             cv2.waitKey(0)
-        elif key == ord('q'):
+        
+        '''
+        if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
 finally:
