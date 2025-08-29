@@ -80,7 +80,7 @@ Overall sequence of steps used for the setup are as follows :
 4. We have already enabled SSH so you do not need a separate display. But if you want you can attach a display using a microHDMI to HDMI cable, plus keyboard and mouse. 
 5. Download and install an IP scanner software like Angry IP Scanner.
 	
- 	<img width="1176" height="921" alt="image" src="https://github.com/user-attachments/assets/7d02c7b9-fd4a-4669-9392-fb1553373176" />
+ 	<img width="912" height="410" alt="image" src="https://github.com/user-attachments/assets/f7ef5ea5-2dd2-499b-9459-69ad2590c672" />
 
     i. Click "Start"
 	ii. It will start searching for all the devices currently present in your network within the default subnet range given under "IP Range"
