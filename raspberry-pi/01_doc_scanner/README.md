@@ -13,6 +13,16 @@ Robust, orientation-agnostic document detection and scan warping on Raspberry Pi
  - Computes a 4-point perspective transform and warps to a top-down scan. 
  - (Optional) Uses Tesseract OSD for orientation correction (0/90/180/270) with short history (debounce). 
 
+## How to run
+
+Hardware: Raspberry Pi 5 + IMX500, reasonably lit indoor scene.
+Software: Python 3, OpenCV 4+, pytesseract (Tesseract 4/5), Picamera2.
+Picamera2 manual (capture/format notes): RGB888 works well with OpenCV. 
+Press q to quit. Windows show: All Contour Feed, topk Contour Feed, few Contour Feed, selected Contour Feed, scan, and optional OCR Annotated.
+
+Focal length of RPI AI Camera (IMX500) was set to 80 cm which made it possible for the camera to scan documents up to 110 cm.
+The current constraints set in the code will not make it possible for camera to scan a document which fully fills up the FoV, mainly because that is not the problem statement being solved here. If one can put the document right in front of the camera perfectly vertical, one doesnt require so much robustness wrt arbitrary position and orientation. The code is meant to scan documents within 110 cm of the camera from the video feed, for example a camera mounted above your working table.
+
 ## Techniques, why they were chosen, and alternatives
 1. Local contrast normalization (CLAHE) → Gaussian blur
 CLAHE boosts text/background separation under uneven indoor lighting; blur reduces high-frequency noise before Canny. 
@@ -144,13 +154,6 @@ Added Tesseract OSD and a small majority window to prevent flip-flop near 90°/1
 
  - Lightweight, classic CV runs real-time on RPi without accelerators and needs no dataset/training.
  - DL alternatives (e.g., corner detectors, segmentation models) add compute and deployment overhead—unnecessary for a single, well-structured class like documents in controlled distance (≤1 m).
-
-## How to run
-
-Hardware: Raspberry Pi 5 + IMX500 (Picamera2), reasonably lit indoor scene.
-Software: Python 3, OpenCV 4+, pytesseract (Tesseract 4/5), Picamera2.
-Picamera2 manual (capture/format notes): RGB888 works well with OpenCV. 
-Press q to quit. Windows show: All Contour Feed, topk Contour Feed, few Contour Feed, selected Contour Feed, scan, and optional OCR Annotated.
 
 ## Tuning knobs (mapped to code constants)
 
