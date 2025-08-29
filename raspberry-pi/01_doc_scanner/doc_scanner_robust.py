@@ -1,28 +1,131 @@
 #!/usr/bin/env python3
+"""
+====================================================================
+Document Scanner (RPi + Picamera2 + OpenCV) — Robust Quad Detection
+====================================================================
+
+Hardware: Raspberry Pi 5 (8 GB) + IMX500 (Picamera2 RGB888 stream)
+Goal    : Detect document at arbitrary rotation (0–360°), warp to
+          a top-down scan, and (optionally) run OCR/OSD for orientation.
+
+Pipeline (high level)
+---------------------
+1) Capture -> grayscale -> CLAHE -> blur
+2) Auto-Canny + morphology to stabilize edges across rotations
+3) External contours only; shortlist with rotation-invariant gates
+4) Force a 4-corner page polygon (hull -> approxPolyDP) and score
+5) Warp via 4-point perspective transform
+6) (Optional) Orientation with Tesseract OSD (debounced majority)
+7) (Optional) OCR overlay side-by-side
+
+This file intentionally uses:
+- **snake_case** for function names (PEP 8),
+- **camelCase** for variable names (project preference),
+- **no magic numbers** in the body — all constants are defined below.
+
+References / API notes:
+- Contour hierarchy + retrieval modes (e.g., RETR_EXTERNAL)  [OpenCV].  :contentReference[oaicite:1]{index=1}
+- Contour approximation via Douglas–Peucker (`approxPolyDP`)  [OpenCV].   :contentReference[oaicite:2]{index=2}
+- 4-point perspective warp (`getPerspectiveTransform`)        [OpenCV].   :contentReference[oaicite:3]{index=3}
+- Tesseract OSD for orientation/confidence                     [tessdoc].  :contentReference[oaicite:4]{index=4}
+
+Author : Rishav Kanth
+"""
+
+# -------------------------------#
+#            Imports             #
+# -------------------------------#
 import cv2
 import pytesseract
-from pytesseract import Output  # FIX: structured OSD output
+from pytesseract import Output  # structured OSD / OCR outputs
 import math
 import numpy as np
 from picamera2 import Picamera2
 from numpy import array, diff, argmin, argmax, int32
 
-# --- Configurable parameters (kept) ---
-BLUR_KSIZE       = (5,5)
-CANNY_LOW, CANNY_HIGH = 50, 150
-CONTOUR_APPROX_EPS= 0.02
-WIDTH, HEIGHT    = 4056, 3040
-# WIDTH, HEIGHT  = 1280, 1920
-Top_K = 10
-MIN_AREA = 10000
-EPSILON = 0.02
-activate_OCR = True
-# --------------------------------------
+# -------------------------------#
+#           Constants            #
+# -------------------------------#
+
+# Camera / image canvas
+WIDTH, HEIGHT                 = 4056, 3040            # scan resolution canvas
+# WIDTH, HEIGHT               = 1280, 1920           # alt canvas (commented)
+PREVIEW_SCALE                 = 0.20                  # preview window scale
+
+# Preprocess (CLAHE + blur)
+CLAHE_CLIP_LIMIT              = 2.0
+CLAHE_TILE_GRID_SIZE          = (8, 8)
+BLUR_KSIZE                    = (5, 5)
+
+# Canny
+CANNY_APERTURE_SIZE           = 3
+CANNY_L2GRADIENT              = True
+
+# Morphology to seal edges
+MORPH_KSIZE                   = (5, 5)
+MORPH_CLOSE_ITER              = 1
+DILATE_ITER                   = 1
+
+# Contours (retrieval/chain)
+RETR_MODE                     = cv2.RETR_EXTERNAL     # external only (ignore text holes)
+CHAIN_MODE                    = cv2.CHAIN_APPROX_SIMPLE
+
+# Shortlisting / geometry gates
+TOP_K                         = 10                    # shortlist size multiplier
+MIN_AREA                      = 10000                 # absolute contour area gate
+MIN_SIDE_FRAC                 = 1.0 / 7.0             # doc side >= 1/7 * min(W,H)
+MAX_SIDE_FRAC                 = 0.50                  # doc side <= 1/2 * min(W,H)
+ASPECT_MIN                    = 0.8                   # allowed aspect range
+ASPECT_MAX                    = 1.5
+EXTENT_MIN                    = 0.65                  # area / (bbox area)
+SOLIDITY_MIN                  = 0.90                  # area / hull area
+ANGLE_MIN_DEG                 = 50.0                  # min internal angle (quad plausibility)
+ANGLE_MAX_DEG                 = 130.0                 # max internal angle
+
+# Approximation parameters
+EPSILON                       = 0.02                  # baseline eps (% of perimeter)
+EPS_ADAPT_START               = 0.015                 # starting eps for hull-approx (absolute)
+EPS_ADAPT_MULTS               = (1.0, 1.5, 2.0, 2.5, 3.5)  # adaptive multipliers
+MERGE_EPS_MULTS               = (1.0, 1.5, 2.0, 2.5, 3.0)  # for merged hull
+MERGE_TOP_REL_SCORE           = 0.70                  # include candidates within 70% of best
+
+# Numerics / small guards
+EPS_DENOM                     = 1e-6                  # division guard
+MIN_SIZE_PX                   = 1                     # minimal positive size
+MIN_WARP_DIM_PX               = 4                     # minimal warp canvas side
+DEG90                         = 90.0                  # for rectangularity score calc
+
+# Drawing / UI
+DRAW_COLOR_BGR                = (255, 0, 0)
+DRAW_THICKNESS                = 5
+ANNOT_TEXT_COLOR              = (0, 0, 255)
+ANNOT_TEXT_SCALE              = 0.5
+ANNOT_TEXT_THICKNESS          = 1
+WHITE_VALUE                   = 255
+WINDOW_ALL_CONTOURS           = "All Contour Feed"
+WINDOW_TOPK_CONTOURS          = "topk Contour Feed"
+WINDOW_FEW_CONTOURS           = "few Contour Feed"
+WINDOW_SELECTED_CONTOUR       = "selected Contour Feed"
+WINDOW_SCAN                   = "scan"
+WINDOW_OCR_ANNOT              = "OCR Annotated"
+
+# OCR / OSD
+ACTIVATE_OCR                  = True
+OSD_HISTORY_LEN               = 5                      # majority window for OSD debouncing
+OSD_CONF_MIN                  = 5.0                    # minimal confidence to trust OSD
+
+# -------------------------------#
+#        Helper Functions        #
+# -------------------------------#
 
 def order_quad(pts):
-    pts = pts.reshape(4,2).astype("float32")
-    s   = pts.sum(axis=1)
-    d   = diff(pts, axis=1).reshape(4)
+    """
+    Order 4 points (x, y) into canonical TL, TR, BR, BL.
+    This ensures a consistent mapping for perspective warp.
+    """
+    pts = pts.reshape(4, 2).astype("float32")
+    s   = pts.sum(axis=1)                        # x + y
+    d   = diff(pts, axis=1).reshape(4)           # x - y
     tl  = pts[argmin(s)]
     br  = pts[argmax(s)]
     tr  = pts[argmin(d)]
@@ -30,201 +133,234 @@ def order_quad(pts):
     return array([tl, tr, br, bl], dtype="float32")
 
 def internal_angles(q):
-    def ang(a,b,c):
-        ba=a-b; bc=c-b
-        cos=np.dot(ba,bc)/(np.linalg.norm(ba)*np.linalg.norm(bc))
-        return math.degrees(math.acos(max(-1,min(1,cos))))
-    return [ ang(q[3],q[0],q[1]),
-             ang(q[0],q[1],q[2]),
-             ang(q[1],q[2],q[3]),
-             ang(q[2],q[3],q[0]) ]
+    """
+    Compute the 4 internal angles of a quadrilateral `q` (TL, TR, BR, BL).
+    Used to suppress highly skewed/non-rectangular quads.
+    """
+    def ang(a, b, c):
+        ba = a - b
+        bc = c - b
+        cosv = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+        return math.degrees(math.acos(max(-1.0, min(1.0, cosv))))
+    return [
+        ang(q[3], q[0], q[1]),
+        ang(q[0], q[1], q[2]),
+        ang(q[1], q[2], q[3]),
+        ang(q[2], q[3], q[0])
+    ]
 
-def auto_canny_thresholds(img_gray):
-    v = np.median(img_gray)
+def auto_canny_thresholds(imgGray):
+    """
+    Auto-select Canny thresholds from the median intensity (robust to lighting).
+    Returns (low, high).
+    """
+    v = np.median(imgGray)
     lower = int(max(0, (1.0 - 0.33) * v))
     upper = int(min(255, (1.0 + 0.33) * v))
     return lower, upper
 
-# FIX: small OSD debounce state
-osd_hist = []        # last N rotations
-OSD_N = 5
-last_rot = None
+# -------------------------------#
+#           Main Loop            #
+# -------------------------------#
 
-# initialize camera
-picam = Picamera2()
-config = picam.create_video_configuration(
+# OSD debounce state (rotation majority vote)
+osdHist = []           # last N rotations
+lastRot = None         # last applied rotation
+
+# Initialize Picamera2 for RGB888 frames (works well with OpenCV)
+piCam = Picamera2()
+camConfig = piCam.create_video_configuration(
     main={"size": (WIDTH, HEIGHT), "format": "RGB888"}
 )
-picam.configure(config)
-picam.start()
-smallPreview = ((int)(WIDTH*0.2), (int)(HEIGHT*0.2))
+piCam.configure(camConfig)
+piCam.start()
+
+smallPreview = (int(WIDTH * PREVIEW_SCALE), int(HEIGHT * PREVIEW_SCALE))
 
 try:
     while True:
-        frame = picam.capture_array()
-        gray  = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)      # Picamera2 manual recommends RGB888 for OpenCV
+        # -------- 1) Capture + preprocessing  --------
+        frameRgb   = piCam.capture_array()                           # RGB888 frame
+        gray8      = cv2.cvtColor(frameRgb, cv2.COLOR_RGB2GRAY)      # grayscale
 
-        # --- Contrast + noise handling ---
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-        grayc = clahe.apply(gray)
-        blur  = cv2.GaussianBlur(grayc, BLUR_KSIZE, 0)
+        # Contrast Limited Adaptive Histogram Equalization (local contrast)
+        claheObj   = cv2.createCLAHE(clipLimit=CLAHE_CLIP_LIMIT, tileGridSize=CLAHE_TILE_GRID_SIZE)
+        grayClahe  = claheObj.apply(gray8)
 
-        # --- Auto-Canny (robust to illumination) ---
-        lo, hi = auto_canny_thresholds(blur)
-        edges  = cv2.Canny(blur, lo, hi, apertureSize=3, L2gradient=True)
+        # Slight Gaussian blur to suppress noise before edges
+        blurImg    = cv2.GaussianBlur(grayClahe, BLUR_KSIZE, 0)
 
-        # --- Close gaps at steep rotations; join corners ---
-        k = cv2.getStructuringElement(cv2.MORPH_RECT, (5,5))
-        edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, k, iterations=1)
-        edges = cv2.dilate(edges, k, iterations=1)
+        # -------- 2) Edges + morphology (rotation-robust)  --------
+        cannyLo, cannyHi = auto_canny_thresholds(blurImg)
+        edgesMap   = cv2.Canny(blurImg, cannyLo, cannyHi,
+                               apertureSize=CANNY_APERTURE_SIZE,
+                               L2gradient=CANNY_L2GRADIENT)
 
-        # Contours: external only (ignore text holes)
-        cnts, hierarchy = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        # Close small gaps in page border; then dilate to link corners
+        morphKernel = cv2.getStructuringElement(cv2.MORPH_RECT, MORPH_KSIZE)
+        edgesMap    = cv2.morphologyEx(edgesMap, cv2.MORPH_CLOSE, morphKernel, iterations=MORPH_CLOSE_ITER)
+        edgesMap    = cv2.dilate(edgesMap, morphKernel, iterations=DILATE_ITER)
 
-        contours1 = cv2.drawContours(frame.copy(), cnts, -1, (255, 0, 0), 5)
-        contours1 = cv2.resize(contours1, smallPreview)
-        cv2.imshow("All Contour Feed", contours1)
+        # -------- 3) Contours: external only (ignore text holes)  --------
+        cntsList, hierarchyArr = cv2.findContours(edgesMap, RETR_MODE, CHAIN_MODE)
 
-        cnts = sorted(cnts, key=cv2.contourArea, reverse=True)[:Top_K*2]
-        if hierarchy is None:
-            hr = np.zeros((1, len(cnts), 4), dtype=np.int32)
+        previewAllContours = cv2.drawContours(frameRgb.copy(), cntsList, -1, DRAW_COLOR_BGR, DRAW_THICKNESS)
+        previewAllContours = cv2.resize(previewAllContours, smallPreview)
+        cv2.imshow(WINDOW_ALL_CONTOURS, previewAllContours)
+
+        # Keep top candidates by area
+        cntsList = sorted(cntsList, key=cv2.contourArea, reverse=True)[:TOP_K * 2]
+        if hierarchyArr is None:
+            hrList = np.zeros((1, len(cntsList), 4), dtype=np.int32)  # preserved structure
         else:
-            hr = np.zeros((1, len(cnts), 4), dtype=np.int32)  # keep structure
+            hrList = np.zeros((1, len(cntsList), 4), dtype=np.int32)
 
-        contours2 = cv2.drawContours(frame.copy(), cnts, -1, (255, 0, 0), 5)
-        contours2 = cv2.resize(contours2, smallPreview)
-        cv2.imshow("topk Contour Feed", contours2)
+        previewTopKContours = cv2.drawContours(frameRgb.copy(), cntsList, -1, DRAW_COLOR_BGR, DRAW_THICKNESS)
+        previewTopKContours = cv2.resize(previewTopKContours, smallPreview)
+        cv2.imshow(WINDOW_TOPK_CONTOURS, previewTopKContours)
 
-        quads = []
-        cnt = []
-        newhr = []
+        # -------- 4) Shortlist quads (rotation-invariant gates) --------
+        quadsList = []    # (quadPoints, rectArea, score, contour)
+        cntList2  = []    # for preview window
+        newHrList = []
 
-        min_dim   = float(min(WIDTH, HEIGHT))
-        min_side  = (1.0/7.0) * min_dim   # your constraint
-        max_side  = 0.50 * min_dim        # your constraint
-        min_aspr, max_aspr = 0.8, 1.5
+        minDim   = float(min(WIDTH, HEIGHT))
+        minSide  = MIN_SIDE_FRAC * minDim
+        maxSide  = MAX_SIDE_FRAC * minDim
+        aspectMin, aspectMax = ASPECT_MIN, ASPECT_MAX
 
-        for c in cnts:
-            if cv2.contourArea(c) < MIN_AREA:
+        for cntItem in cntsList:
+            if cv2.contourArea(cntItem) < MIN_AREA:
                 continue
 
-            # rotation-invariant size filter via minAreaRect (gating only)
-            rect = cv2.minAreaRect(c)                       # ((cx,cy),(w,h),angle)
-            (cx, cy), (rw, rh), ang = rect
-            if rw < rh: w, h = rh, rw
-            else:       w, h = rw, rh
-            if w < 1 or h < 1: 
-                continue
-            rect_area = w*h
-            aspr      = w / max(h, 1e-6)
-
-            # contour solidity/extent to reject text & thin lines
-            area_     = cv2.contourArea(c)
-            hull      = cv2.convexHull(c)
-            solidity  = area_ / (cv2.contourArea(hull)+1e-6)
-
-            x,y,ww,hh = cv2.boundingRect(c)
-            extent    = area_ / float(ww*hh)
-
-            if not (min_side <= w <= max_side and min_side <= h <= max_side and
-                    min_aspr <= aspr <= max_aspr and extent > 0.65 and solidity > 0.90):
+            # Size/aspect gating via minAreaRect (rotation-invariant)
+            minRect = cv2.minAreaRect(cntItem)                 # ((cx,cy),(w,h),angle)
+            (cx, cy), (rw, rh), ang = minRect
+            if rw < rh:
+                wLen, hLen = rh, rw
+            else:
+                wLen, hLen = rw, rh
+            if wLen < MIN_SIZE_PX or hLen < MIN_SIZE_PX:
                 continue
 
-            # --------- FIX: get the TRUE page quad (not a bounding box) ----------
-            # 1) stabilize shape by approximating the convex hull, not raw contour
-            peri_h = cv2.arcLength(hull, True)
-            # adapt epsilon until we get 4 points (cap it to avoid over-smoothing)
-            eps = max(EPSILON, 0.015)
-            approx = None
-            for k in [eps, eps*1.5, eps*2.0, eps*2.5, eps*3.5]:
-                a = cv2.approxPolyDP(hull, k*peri_h, True)
+            rectArea = wLen * hLen
+            aspect   = wLen / max(hLen, EPS_DENOM)
+
+            # Filledness/convexity to reject text strokes or grout lines
+            areaContour = cv2.contourArea(cntItem)
+            hullContour = cv2.convexHull(cntItem)
+            solidity    = areaContour / (cv2.contourArea(hullContour) + EPS_DENOM)
+
+            bx, by, bw, bh = cv2.boundingRect(cntItem)
+            extent      = areaContour / float(bw * bh)
+
+            # Gate: size band + aspect band + extent + solidity
+            if not (minSide <= wLen <= maxSide and
+                    minSide <= hLen <= maxSide and
+                    aspectMin <= aspect <= aspectMax and
+                    extent > EXTENT_MIN and
+                    solidity > SOLIDITY_MIN):
+                continue
+
+            # Stabilize the true page polygon:
+            #   approximate the convex hull, adapting epsilon until we get 4 vertices.
+            periHull = cv2.arcLength(hullContour, True)
+            epsStart = max(EPSILON, EPS_ADAPT_START)
+            approxPoly = None
+            for mul in EPS_ADAPT_MULTS:
+                a = cv2.approxPolyDP(hullContour, (epsStart * mul) * periHull, True)
                 if len(a) == 4:
-                    approx = a
+                    approxPoly = a
                     break
-            if approx is None:
-                # fall back: use boxPoints only for scoring, not for warp
-                approx = cv2.boxPoints(rect).astype(np.float32).reshape(-1,1,2)
+            if approxPoly is None:
+                # Fallback: use oriented box (OK for scoring/preview; warp still works)
+                approxPoly = cv2.boxPoints(minRect).astype(np.float32).reshape(-1, 1, 2)
 
-            quad = order_quad(approx.reshape(4,2).astype(np.float32))
-            angles = internal_angles(quad)
+            quadPoints  = order_quad(approxPoly.reshape(4, 2).astype(np.float32))
+            anglesList  = internal_angles(quadPoints)
 
-            if min(angles) < 50 or max(angles) > 130:
-                # too distorted to be a page (perspective + noise), reject
+            # Suppress non-rectangular quads (heavy skew/noise)
+            if min(anglesList) < ANGLE_MIN_DEG or max(anglesList) > ANGLE_MAX_DEG:
                 continue
 
-            # prefer larger, more filled, more rectangular candidates
-            rectangularity = min(angles)/90.0 * (90.0/max(angles))
-            score = (rect_area / (WIDTH*HEIGHT)) * extent * solidity * rectangularity
-            quads.append((quad, rect_area, score, c))
-            cnt.append(c)
+            # Composite score: larger + more filled + more rectangular
+            rectangularityScore = (min(anglesList) / DEG90) * (DEG90 / max(anglesList))
+            scoreVal = (rectArea / (WIDTH * HEIGHT)) * extent * solidity * rectangularityScore
 
-        contours3 = cv2.drawContours(frame.copy(), cnt, -1, (255, 0, 0), 5)
-        contours3 = cv2.resize(contours3, smallPreview)
-        cv2.imshow("few Contour Feed", contours3)
+            quadsList.append((quadPoints, rectArea, scoreVal, cntItem))
+            cntList2.append(cntItem)
 
-        # choose best quad; if multiple, merge and re-approx hull->4 points
+        previewFewContours = cv2.drawContours(frameRgb.copy(), cntList2, -1, DRAW_COLOR_BGR, DRAW_THICKNESS)
+        previewFewContours = cv2.resize(previewFewContours, smallPreview)
+        cv2.imshow(WINDOW_FEW_CONTOURS, previewFewContours)
+
+        # -------- 5) Pick best; if multiple close, merge & re-approx --------
         screenCnt = None
-        c = None
-        if len(quads) == 1:
-            screenCnt = quads[0][0].reshape(-1,1,2).astype(int32)
-            c = quads[0][3]
-        elif len(quads) > 1:
-            quads.sort(key=lambda t: t[2], reverse=True)
-            top = [q for q in quads if q[2] >= 0.7*quads[0][2]]
-            merged = np.vstack([q[3] for q in top])
-            hull_m = cv2.convexHull(merged)
-            peri_m = cv2.arcLength(hull_m, True)
-            approx_m = None
-            for k in [EPSILON, EPSILON*1.5, EPSILON*2.0, EPSILON*2.5, EPSILON*3.0]:
-                am = cv2.approxPolyDP(hull_m, k*peri_m, True)
+        selectedContour = None
+
+        if len(quadsList) == 1:
+            screenCnt = quadsList[0][0].reshape(-1, 1, 2).astype(int32)
+            selectedContour = quadsList[0][3]
+        elif len(quadsList) > 1:
+            quadsList.sort(key=lambda t: t[2], reverse=True)
+            topGroup = [q for q in quadsList if q[2] >= MERGE_TOP_REL_SCORE * quadsList[0][2]]
+
+            mergedContour = np.vstack([q[3] for q in topGroup])
+            hullMerged    = cv2.convexHull(mergedContour)
+            periMerged    = cv2.arcLength(hullMerged, True)
+
+            approxMerged = None
+            for mul in MERGE_EPS_MULTS:
+                am = cv2.approxPolyDP(hullMerged, (EPSILON * mul) * periMerged, True)
                 if len(am) == 4:
-                    approx_m = am
+                    approxMerged = am
                     break
-            if approx_m is None:
-                approx_m = cv2.boxPoints(cv2.minAreaRect(merged)).astype(np.float32).reshape(-1,1,2)
-            screenCnt = order_quad(approx_m.reshape(4,2).astype(np.float32)).reshape(-1,1,2).astype(int32)
-            c = merged
+            if approxMerged is None:
+                approxMerged = cv2.boxPoints(cv2.minAreaRect(mergedContour)).astype(np.float32).reshape(-1, 1, 2)
+
+            screenCnt = order_quad(approxMerged.reshape(4, 2).astype(np.float32)).reshape(-1, 1, 2).astype(int32)
+            selectedContour = mergedContour
         else:
-            # last resort: try a strict 4-pt approx on any of the Top_K
-            for c2 in cnts:
-                peri   = cv2.arcLength(c2, True)
-                a = cv2.approxPolyDP(c2, CONTOUR_APPROX_EPS * peri, True)
+            # Fallback: try a strict 4-pt approx on any Top-K contour
+            for cnt2 in cntsList:
+                peri = cv2.arcLength(cnt2, True)
+                a = cv2.approxPolyDP(cnt2, EPSILON * peri, True)
                 if len(a) == 4:
-                    screenCnt = order_quad(a.reshape(4,2).astype(np.float32)).reshape(-1,1,2).astype(int32)
-                    c = c2
+                    screenCnt = order_quad(a.reshape(4, 2).astype(np.float32)).reshape(-1, 1, 2).astype(int32)
+                    selectedContour = cnt2
                     break
 
         try:
-            contours4 = cv2.drawContours(frame.copy(), c, -1, (255, 0, 0), 5)
-            contours4 = cv2.resize(contours4, smallPreview)
-            cv2.imshow("selected Contour Feed", contours4)
-        except:
+            previewSelectedContour = cv2.drawContours(frameRgb.copy(), selectedContour, -1, DRAW_COLOR_BGR, DRAW_THICKNESS)
+            previewSelectedContour = cv2.resize(previewSelectedContour, smallPreview)
+            cv2.imshow(WINDOW_SELECTED_CONTOUR, previewSelectedContour)
+        except Exception:
             pass
 
-        # -------------------------- Warp (exact) ---------------------------
+        # -------- 6) Perspective warp (exact 4-point mapping) --------
         if screenCnt is not None:
-            pts  = screenCnt.reshape(4,2).astype("float32")
-            quad = order_quad(pts)
+            ptsFloat = screenCnt.reshape(4, 2).astype("float32")
+            quadPoints = order_quad(ptsFloat)
 
-            # robust size from averaged opposite sides (no elongation/shortening)
-            wA = np.linalg.norm(quad[1] - quad[0])
-            wB = np.linalg.norm(quad[2] - quad[3])
-            hA = np.linalg.norm(quad[3] - quad[0])
-            hB = np.linalg.norm(quad[2] - quad[1])
-            w_est = max(int(round((wA + wB)*0.5)), 4)
-            h_est = max(int(round((hA + hB)*0.5)), 4)
+            # Average opposite sides for width/height (robust, avoids elongation)
+            wA = np.linalg.norm(quadPoints[1] - quadPoints[0])
+            wB = np.linalg.norm(quadPoints[2] - quadPoints[3])
+            hA = np.linalg.norm(quadPoints[3] - quadPoints[0])
+            hB = np.linalg.norm(quadPoints[2] - quadPoints[1])
+            wEst = max(int(round((wA + wB) * 0.5)), MIN_WARP_DIM_PX)
+            hEst = max(int(round((hA + hB) * 0.5)), MIN_WARP_DIM_PX)
 
-            # constrain to canvas but preserve detected aspect
-            scale = min(WIDTH/float(w_est), HEIGHT/float(h_est), 1.0)
-            dst_w = max(int(w_est*scale), 4)
-            dst_h = max(int(h_est*scale), 4)
+            # Preserve detected aspect within WIDTH x HEIGHT canvas
+            scale  = min(WIDTH / float(wEst), HEIGHT / float(hEst), 1.0)
+            dstW   = max(int(wEst * scale), MIN_WARP_DIM_PX)
+            dstH   = max(int(hEst * scale), MIN_WARP_DIM_PX)
 
-            dst  = array([[0,0],
-                          [dst_w-1,0],
-                          [dst_w-1,dst_h-1],
-                          [0,dst_h-1]], dtype="float32")
-            M    = cv2.getPerspectiveTransform(quad, dst)   # true perspective warp
-            warp = cv2.warpPerspective(frame, M, (dst_w, dst_h), flags=cv2.INTER_LINEAR)
+            dstPts = array([[0, 0],
+                            [dstW - 1, 0],
+                            [dstW - 1, dstH - 1],
+                            [0, dstH - 1]], dtype="float32")
+            mPerspective = cv2.getPerspectiveTransform(quadPoints, dstPts)
+            warpImage    = cv2.warpPerspective(frameRgb, mPerspective, (dstW, dstH), flags=cv2.INTER_LINEAR)
         else:
             key = cv2.waitKey(1)
             if key == ord('q'):
@@ -232,97 +368,84 @@ try:
             else:
                 continue
 
-        # ----------------- Orientation correction (debounced) --------------
-        if activate_OCR:
+        # -------- 7) Orientation correction (OSD, debounced) --------
+        if ACTIVATE_OCR:
             try:
-                osd = pytesseract.image_to_osd(warp, output_type=Output.DICT)
-                rot = int(osd.get("rotate", 0))
-                conf = float(osd.get("orientation_conf", 0))
-                if conf >= 5:  # small threshold to avoid flip-flop
-                    osd_hist.append(rot)
-                    if len(osd_hist) > OSD_N:
-                        osd_hist.pop(0)
-                    # majority vote across last N
-                    votes = max(set(osd_hist), key=osd_hist.count)
-                    if votes != last_rot:
-                        last_rot = votes
-                        if votes == 90:
-                            warp = cv2.rotate(warp, cv2.ROTATE_90_CLOCKWISE)
-                        elif votes == 180:
-                            warp = cv2.rotate(warp, cv2.ROTATE_180)
-                        elif votes == 270:
-                            warp = cv2.rotate(warp, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                osdInfo = pytesseract.image_to_osd(warpImage, output_type=Output.DICT)
+                rotDeg  = int(osdInfo.get("rotate", 0))                    # {0,90,180,270}
+                orientConf = float(osdInfo.get("orientation_conf", 0))     # confidence scalar
+
+                if orientConf >= OSD_CONF_MIN:  # trust only if confident
+                    osdHist.append(rotDeg)
+                    if len(osdHist) > OSD_HISTORY_LEN:
+                        osdHist.pop(0)
+
+                    # Majority vote across recent frames to prevent flip-flop
+                    votesRot = max(set(osdHist), key=osdHist.count)
+                    if votesRot != lastRot:
+                        lastRot = votesRot
+                        if votesRot == 90:
+                            warpImage = cv2.rotate(warpImage, cv2.ROTATE_90_CLOCKWISE)
+                        elif votesRot == 180:
+                            warpImage = cv2.rotate(warpImage, cv2.ROTATE_180)
+                        elif votesRot == 270:
+                            warpImage = cv2.rotate(warpImage, cv2.ROTATE_90_COUNTERCLOCKWISE)
             except Exception:
                 pass
 
-            # Convert to RGB for pytesseract
-            rgb_warp = cv2.cvtColor(warp, cv2.COLOR_BGR2RGB)
-            data = pytesseract.image_to_data(
-                rgb_warp, output_type=pytesseract.Output.DICT
-            )
+            # -------- 8) OCR overlay (side-by-side preview) --------
+            # Convert to RGB for Tesseract input
+            rgbWarp = cv2.cvtColor(warpImage, cv2.COLOR_BGR2RGB)
+            ocrData = pytesseract.image_to_data(rgbWarp, output_type=pytesseract.Output.DICT)
 
-            # 5) Overlay OCR text on a copy of the warp
-            # annotated = warp.copy()
-            annotated = 255*np.ones(warp.shape)
-            n_boxes = len(data["level"])
-            for i in range(n_boxes):
-                text = data["text"][i].strip()
+            # Build a white canvas and draw recognized words for quick visual QA
+            annotatedImg = WHITE_VALUE * np.ones(warpImage.shape, dtype=warpImage.dtype)
+            nBoxes = len(ocrData["level"])
+            for i in range(nBoxes):
+                text = ocrData["text"][i].strip()
                 if not text:
                     continue
-                x, y, w, h = (data["left"][i],
-                              data["top"][i],
-                              data["width"][i],
-                              data["height"][i])
-                # draw bounding box (optional)
-                # cv2.rectangle(annotated,
-                #               (x, y), (x+w, y+h),
-                #               (255,0,0), 1)
-                # overlay text just above the box
-                cv2.putText(annotated, text,
-                            # (x, y-10),
-                            (x, y),
-                            # 0.5,
+                x, y, wBox, hBox = (ocrData["left"][i],
+                                    ocrData["top"][i],
+                                    ocrData["width"][i],
+                                    ocrData["height"][i])
+                cv2.putText(annotatedImg, text, (x, y),
                             cv2.FONT_HERSHEY_SIMPLEX,
-                            0.5, (0,0,255), 1,
+                            ANNOT_TEXT_SCALE, ANNOT_TEXT_COLOR, ANNOT_TEXT_THICKNESS,
                             lineType=cv2.LINE_AA)
-            print(warp.shape)
-            print(annotated.shape)
-            if annotated.ndim == 2:
-                annotated = cv2.cvtColor(annotated, cv2.COLOR_GRAY2BGR)
 
-            if warp.ndim == 2:
-                warp = cv2.cvtColor(warp, cv2.COLOR_GRAY2BGR)
+            print(warpImage.shape)
+            print(annotatedImg.shape)
 
-            # If one accidentally became 4-channel (BGRA), drop alpha
-            if annotated.shape[-1] == 4 and warp.shape[-1] == 3:
-                annotated = cv2.cvtColor(annotated, cv2.COLOR_BGRA2BGR)
-            elif warp.shape[-1] == 4 and annotated.shape[-1] == 3:
-                warp = cv2.cvtColor(warp, cv2.COLOR_BGRA2BGR)
+            # Make sure concat preconditions hold (same dtype/rows/channels)
+            if annotatedImg.ndim == 2:
+                annotatedImg = cv2.cvtColor(annotatedImg, cv2.COLOR_GRAY2BGR)
+            if warpImage.ndim == 2:
+                warpImage = cv2.cvtColor(warpImage, cv2.COLOR_GRAY2BGR)
+            if annotatedImg.shape[-1] == 4 and warpImage.shape[-1] == 3:
+                annotatedImg = cv2.cvtColor(annotatedImg, cv2.COLOR_BGRA2BGR)
+            elif warpImage.shape[-1] == 4 and annotatedImg.shape[-1] == 3:
+                warpImage = cv2.cvtColor(warpImage, cv2.COLOR_BGRA2BGR)
+            if annotatedImg.dtype != warpImage.dtype:
+                annotatedImg = annotatedImg.astype(warpImage.dtype)
+            if annotatedImg.shape[0] != warpImage.shape[0]:
+                annotatedImg = cv2.resize(annotatedImg, (annotatedImg.shape[1], warpImage.shape[0]))
 
-            # Enforce same dtype
-            if annotated.dtype != warp.dtype:
-                annotated = annotated.astype(warp.dtype)
+            warpImage    = np.ascontiguousarray(warpImage)
+            annotatedImg = np.ascontiguousarray(annotatedImg)
 
-            # Enforce same number of rows
-            if annotated.shape[0] != warp.shape[0]:
-                annotated = cv2.resize(annotated, (annotated.shape[1], warp.shape[0]))
+            ocrPreview = cv2.hconcat([warpImage, annotatedImg])
+            cv2.imshow(WINDOW_OCR_ANNOT, ocrPreview)
 
-            # Ensure contiguous
-            warp = np.ascontiguousarray(warp)
-            annotated = np.ascontiguousarray(annotated)
+        # Optional on-screen size readout for tuning (commented in original)
+        # cv2.putText(warpImage, f"scan: {warpImage.shape[1]}x{warpImage.shape[0]}",
+        #             (10, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,255,0), 2)
 
-            ocrPreview = cv2.hconcat([warp, annotated])
-            cv2.imshow("OCR Annotated", ocrPreview)
-
-        # # optional overlay for tuning
-        # cv2.putText(warp, f"scan: {warp.shape[1]}x{warp.shape[0]}", (10, 24),
-        #             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,255,0), 2)
-
-        cv2.imshow("scan", warp)
+        cv2.imshow(WINDOW_SCAN, warpImage)
         key = cv2.waitKey(1)
         if key == ord('q'):
             break
 
 finally:
-    picam.stop()
+    piCam.stop()
     cv2.destroyAllWindows()
