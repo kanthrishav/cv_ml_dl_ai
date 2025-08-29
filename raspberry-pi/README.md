@@ -82,22 +82,22 @@ Overall sequence of steps used for the setup are as follows :
 	
  	<img width="912" height="410" alt="image" src="https://github.com/user-attachments/assets/f7ef5ea5-2dd2-499b-9459-69ad2590c672" />
 
-    i. Click "Start"
-	ii. It will start searching for all the devices currently present in your network within the default subnet range given under "IP Range"
-    iii. After the search ends, find your RPI with the hostname that you had given and make a note of the IP address of your RPI
+ - Click "Start"
+ - It will start searching for all the devices currently present in your network within the default subnet range given under "IP Range"
+ - After the search ends, find your RPI with the hostname that you had given and make a note of the IP address of your RPI
+
+	<img width="780" height="218" alt="image" src="https://github.com/user-attachments/assets/94106ee4-03de-4d0d-9b0f-0ef04b838455" />
    
-   	<img width="1221" height="1081" alt="image" src="https://github.com/user-attachments/assets/f89e50d0-7490-4c64-b9ae-89755b91a347" />
-			
-	iv. Alternatively, instead of using a third party software like the Angry IIP Scanner, you can search for the IP of your RPI using either your router's DHCP client list or by running this command on your terminal in your laptop "namp -sP 192.168.0.0/255"
-    v. Lets say you found that the IP address of your RPI is "192.168.0.105"
-6. Open a terminal in your laptop (preferably MobaXterm in Windows)
+ - Alternatively, instead of using a third party software like the Angry IIP Scanner, you can search for the IP of your RPI using either your router's DHCP client list or by running this command on your terminal in your laptop "namp -sP 192.168.0.0/255"
+ - Lets say you found that the IP address of your RPI is "192.168.0.105"
+7. Open a terminal in your laptop (preferably MobaXterm in Windows)
 	i. Run the command "ssh pi2pi.local" or "ssh pi@192.168.0.102"
 	ii. Enter the password
 	iii. And you will be in
 
     <img width="952" height="303" alt="image" src="https://github.com/user-attachments/assets/2b8c52c4-5415-4a53-9ae5-a35ca96fbb3f" />
 
-7. Run "sudo apt update && sudo apt full-upgrade -y"
+8. Run "sudo apt update && sudo apt full-upgrade -y"
 	i. And once this ends, reboot your RPI using "sudo reboot"
 
 	
