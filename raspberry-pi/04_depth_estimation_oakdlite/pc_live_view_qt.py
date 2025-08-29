@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 # pc_live_view_qt.py
 # Live 3D point-cloud viewer (PyQtGraph OpenGL) subscribing to tcp://127.0.0.1:5556
+# Keys:
+#   O            -> toggle ortho-like / perspective
+#   + / -        -> point size up/down
+#   ] / [        -> density up/down (0.5×, 1×, 2×)
+#   R / F        -> rotate yaw by ±5°
+#   S            -> save PNG of the current view
+#   Q / Esc      -> quit
 
 import sys, json, time, math, os, signal
 import numpy as np
@@ -24,18 +31,25 @@ class LivePC(QtWidgets.QWidget):
 
         # GL view
         self.view = gl.GLViewWidget()
-        self.view.setCameraPosition(distance=6, elevation=10, azimuth=45, fov=60)  # perspective by default
+        self.view.setCameraPosition(distance=6, elevation=10, azimuth=45)
+        self.view.setCameraParams(fov=60)  # perspective by default
         self.view.opts['center'] = pg.Vector(0,0,0)
         self.ortho_mode = False
 
-        # Axes (camera coordinates: X right, Y down, Z forward)
+        # Axes (GL coords): X right (red), Y forward (green), Z up (blue)
         self.axes_items = []
         self._add_axis((0,0,0), (1.0,0,0), (255,  0,  0))  # X red
         self._add_axis((0,0,0), (0,1.0,0), (  0,255,  0))  # Y green
         self._add_axis((0,0,0), (0,0,1.0), (  0,  0,255))  # Z blue
 
-        # Scatter
-        self.scatter = gl.GLScatterPlotItem(pos=np.zeros((1,3)), color=(1,1,1,1), size=1.5, pxMode=True)
+        # Scatter (opaque for speed/visibility)
+        self.scatter = gl.GLScatterPlotItem(
+            pos=np.zeros((1,3), dtype=np.float32),
+            color=(1.0,1.0,1.0,1.0),
+            size=1.5,
+            pxMode=True
+        )
+        self.scatter.setGLOptions('opaque')
         self.view.addItem(self.scatter)
         self.point_size = 1.5
 
@@ -60,17 +74,21 @@ class LivePC(QtWidgets.QWidget):
         self.fx = 489.0; self.fy = 460.0
         self.cx = 320.0; self.cy = 240.0
         self.A = 2.0; self.B = 0.0
-        self.metric = False
-        self.rot_yaw = 0.0         # extra yaw rotation for viewer
+        self.is_metric = False
+        self.rot_yaw = 0.0         # extra yaw rotation around camera Y (forward)
         self.density_scale = 1.0    # 0.5, 1.0, 2.0
+
+        # Center-on-first-frame
+        self.center_set = False
 
         # Robust close
         self._running = True
 
-    def _add_axis(self, p0, p1, color):
-        pts = np.array([p0, p1], dtype=float)
-        col = np.array([[c/255.0 for c in color]]*2)
-        item = gl.GLLinePlotItem(pos=pts, color=col, width=2, antialias=True, mode='lines')
+    def _add_axis(self, p0, p1, color_rgb):
+        pts = np.array([p0, p1], dtype=np.float32)
+        col = np.array([[color_rgb[0]/255.0, color_rgb[1]/255.0, color_rgb[2]/255.0, 1.0]]*2, dtype=np.float32)
+        item = gl.GLLinePlotItem(pos=pts, color=col, width=2, antialias=True)
+        item.setGLOptions('opaque')
         self.view.addItem(item)
         self.axes_items.append(item)
 
@@ -82,6 +100,7 @@ class LivePC(QtWidgets.QWidget):
             self.close()
         elif k == QtCore.Qt.Key_O:
             self.ortho_mode = not self.ortho_mode
+            # emulate orthographic by using a tiny FOV
             self.view.setCameraParams(fov=(1 if self.ortho_mode else 60))
         elif k == QtCore.Qt.Key_Plus or k == QtCore.Qt.Key_Equal:
             self.point_size = min(12.0, self.point_size + 0.5)
@@ -98,11 +117,18 @@ class LivePC(QtWidgets.QWidget):
         elif k == QtCore.Qt.Key_F:
             self.rot_yaw -= 5.0
         elif k == QtCore.Qt.Key_S:
-            # save PNG of the GL view
-            img = self.view.readQImage()
-            ts = time.strftime("%Y%m%d_%H%M%S")
-            fn = f"pc_screenshot_{ts}.png"
-            img.save(fn)
+            # save PNG of the GL view; try readQImage(), else grabFramebuffer()
+            fn = f"pc_screenshot_{time.strftime('%Y%m%d_%H%M%S')}.png"
+            try:
+                img = self.view.readQImage()
+                img.save(fn)
+            except Exception:
+                try:
+                    img = self.view.grabFramebuffer()
+                    img.save(fn)
+                except Exception as e:
+                    print("[viewer] screenshot failed:", e)
+                    return
             print(f"[viewer] Saved {fn}")
 
     def closeEvent(self, ev):
@@ -129,7 +155,7 @@ class LivePC(QtWidgets.QWidget):
             self.A, self.B = float(header["a"]), float(header["b"])
             self.fx, self.fy = float(header["fx"]), float(header["fy"])
             self.cx, self.cy = float(header["cx"]), float(header["cy"])
-            self.metric = bool(header.get("metric", False))
+            self.is_metric = bool(header.get("metric", False))
 
             dn = np.frombuffer(dn_raw, dtype=np.float16).astype(np.float32).reshape(h, w)
             cmap = cv2.imdecode(np.frombuffer(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
@@ -142,27 +168,42 @@ class LivePC(QtWidgets.QWidget):
                 cmap = cv2.resize(cmap, None, fx=self.density_scale, fy=self.density_scale, interpolation=cv2.INTER_LINEAR)
                 h, w = dn.shape
 
-            # Build metric 3D (camera frame: X right, Y down, Z forward)
-            Z = np.clip(self.A * (1.0 - dn) + self.B, 1e-3, 100.0) if self.metric else (1.0 - dn)
-            uu, vv = np.meshgrid(np.arange(w, dtype=np.float32),
-                                 np.arange(h, dtype=np.float32))
-            if self.metric:
-                X = (uu - self.cx) * Z / self.fx
-                Y = (vv - self.cy) * Z / self.fy
+            # Build 3D (camera → GL): camera(X right, Y down, Z forward)
+            # Map to GL: X -> X, Z(forward) -> Y, and image "down" -> negative Z (up positive).
+            if self.is_metric:
+                Zc = np.clip(self.A * (1.0 - dn) + self.B, 1e-3, 100.0)  # meters (camera Z forward)
+                uu, vv = np.meshgrid(np.arange(w, dtype=np.float32),
+                                     np.arange(h, dtype=np.float32))
+                Xc = (uu - self.cx) * Zc / self.fx               # meters, right
+                Yc = (vv - self.cy) * Zc / self.fy               # meters, down
             else:
-                X = (uu - w*0.5) / float(w)
-                Y = (vv - h*0.5) / float(h)
+                Zc = 1.0 - dn
+                uu, vv = np.meshgrid(np.arange(w, dtype=np.float32),
+                                     np.arange(h, dtype=np.float32))
+                Xc = (uu - w*0.5) / float(w)
+                Yc = (vv - h*0.5) / float(h)
 
-            # Apply yaw rotation (viewer control) around camera Y axis
+            # Viewer yaw about camera Y (forward)
             yaw = math.radians(self.rot_yaw)
             cyaw, syaw = math.cos(yaw), math.sin(yaw)
-            Xr = X*cyaw + Z*syaw
-            Zr = -X*syaw + Z*cyaw
-            Yr = Y
+            Xr = Xc*cyaw + Zc*syaw
+            Zr = -Xc*syaw + Zc*cyaw
+            Yr = Yc
 
-            pos = np.stack([Xr, Yr, Zr], axis=-1).reshape(-1, 3)
+            # Map camera -> GL: (Xr, Zr, -Yr)  -> X (right), Y (forward), Z (up)
+            Xg = Xr.astype(np.float32)
+            Yg = Zr.astype(np.float32)
+            Zg = (-Yr).astype(np.float32)
+
+            pos = np.stack([Xg, Yg, Zg], axis=-1).reshape(-1, 3).astype(np.float32)
             col = (cmap.reshape(-1,3).astype(np.float32) / 255.0)
             col = np.concatenate([col, np.ones((col.shape[0],1), np.float32)], axis=1)  # add alpha
+
+            # Center on first frame so cloud is in view
+            if not self.center_set and pos.size:
+                med = np.median(pos, axis=0)
+                self.view.opts['center'] = pg.Vector(float(med[0]), float(med[1]), float(med[2]))
+                self.center_set = True
 
             # Update scatter efficiently
             self.scatter.setData(pos=pos, color=col, size=self.point_size, pxMode=True)
@@ -170,8 +211,8 @@ class LivePC(QtWidgets.QWidget):
             self.hud.setText(
                 f"Projection: {'ORTHO-like' if self.ortho_mode else 'Perspective'}   "
                 f"Point size: {self.point_size:.1f}   Density: {self.density_scale:.1f}x   "
-                f"{'Units: meters ' if self.metric else 'Units: relative '} "
-                f"(A={self.A:.3f}, B={self.B:.3f})   Axes: X→right (red), Y→down (green), Z→forward (blue)"
+                f"{'Units: meters ' if self.is_metric else 'Units: relative '} "
+                f"(A={self.A:.3f}, B={self.B:.3f})   Axes(GL): X→right (red), Y→forward (green), Z→up (blue)"
             )
 
         except Exception as e:
