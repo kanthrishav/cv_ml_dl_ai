@@ -49,7 +49,7 @@ Overall sequence of steps used for the setup are as follows :
 		d) Check locale settings : these usually get populated on its own, if not you can make your selection
 	2) In the Services tab
 
-		<img width="1130" height="1539" alt="image" src="https://github.com/user-attachments/assets/c7dff5b9-ce46-4b42-af10-fbfdccff7e38" />
+		<img width="772" height="347" alt="image" src="https://github.com/user-attachments/assets/cb264ab8-cce4-4ffa-93f0-9a0bd615c560" />
 
 		a) Check "Enable SSH"
 		b) You can either go with password authentication or allow public-key authentication only
