@@ -35,7 +35,8 @@ Overall sequence of steps used for the setup are as follows :
  4. Click Next
  5. Upon clicking next you will see these options
     
- 	<img width="860" height="828" alt="image" src="https://github.com/user-attachments/assets/982246c3-acab-4426-9600-e237837b5066" />
+ 	<img width="657" height="203" alt="image" src="https://github.com/user-attachments/assets/1ac3c9bb-07af-4d6b-bb47-73d559f63313" />
+
   
  6. Click on "Edit Settings" - > Three tabs will be there General, Services and Options
 	1) In the General Tab check the options
