@@ -57,7 +57,7 @@ Reason not used: A4/sheet-like documents require a full projective transform.
 OSD returns discrete rotations (0/90/180/270) + confidence; a short history suppresses flip-flop near ambiguous angles. 
 Alternatives: Hough-based baseline voting / gradient-energy ratios; good backups but OSD is language-aware and simple to integrate. 
 
-🔁 Processing sequence (exact order used)
+## Processing sequence (exact order used)
 
 1. Capture RGB888 frame from Picamera2 (sized to WIDTH×HEIGHT).
 2. Grayscale → CLAHE → Gaussian blur (local contrast, denoise).
