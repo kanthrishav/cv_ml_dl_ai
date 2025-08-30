@@ -1,6 +1,6 @@
 # Document Scanner (RPi 5 + Picamera2 + OpenCV) — README
 
-<img width="1532" height="887" alt="image" src="https://github.com/user-attachments/assets/fa0839bd-9b3b-4a50-9a70-a739bbc2128c" />
+<img width="766" height="443" alt="image" src="https://github.com/user-attachments/assets/fa0839bd-9b3b-4a50-9a70-a739bbc2128c" />
 
 Robust, orientation-agnostic document detection and scan warping on Raspberry Pi 5 (IMX500 + Picamera2), with optional OCR and auto-rotation.
 
