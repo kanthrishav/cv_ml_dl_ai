@@ -1,14 +1,30 @@
 #!/usr/bin/env python3
-# pc_live_view_qt.py
-# Live 3D point-cloud viewer (PyQtGraph OpenGL) subscribing to tcp://127.0.0.1:5556
-# Keys:
-#   O            -> toggle ortho-like / perspective
-#   + / -        -> point size up/down
-#   ] / [        -> density up/down (0.5×, 1×, 2×)
-#   R / F        -> rotate yaw by ±5°
-#   S            -> save PNG of the current view
-#   Q / Esc      -> quit
+"""
+pc_live_view_qt.py
 
+Live 3D point-cloud viewer (PyQtGraph OpenGL) that subscribes to a ZMQ stream on
+tcp://127.0.0.1:5556.
+
+The publisher is expected to send multipart frames with the topic "pc":
+  [b"pc"] [header-json] [depth-payload] [jpeg-colormap]
+  - header fields (subset): w,h, fx,fy,cx,cy, a,b, metric (bool)
+  - if metric==True and payload is float16 'dn': Z ≈ a*(1-dn)+b (meters)
+  - some publishers may send metric depth directly (uint16 millimeters)
+
+Controls (focused on the viewer window):
+  O         : toggle perspective / ortho-like (tiny FOV)
+  + / -     : point size up/down
+  ] / [     : density scale 0.5×, 1×, 2×
+  R / F     : yaw rotate ±5°
+  M / N     : near-cut distance +/− (meters)
+  S         : save PNG of current view
+  Q / Esc   : quit
+
+Author : Rishav KAnth
+"""
+
+# ────────────────────────────────────────────────────────────────────────────────
+# Standard / third-party imports
 import sys, json, time, math, os, signal
 import numpy as np
 import zmq, cv2
@@ -16,215 +32,307 @@ from PySide6 import QtWidgets, QtGui, QtCore
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 
-# ---------- ZMQ SUB ----------
-ctx = zmq.Context.instance()
-sub = ctx.socket(zmq.SUB)
-sub.setsockopt(zmq.RCVHWM, 1)
-sub.connect("tcp://127.0.0.1:5556")
-sub.setsockopt_string(zmq.SUBSCRIBE, "pc")
+# ────────────────────────────────────────────────────────────────────────────────
+# CONSTANTS (no magic numbers below)
 
+# ZMQ
+ZMQ_CONNECT_ADDR      = "tcp://127.0.0.1:5556"
+ZMQ_TOPIC             = "pc"
+ZMQ_RCV_HWM           = 1  # drop backlog; prefer most recent frame
+
+# Window / camera defaults
+WINDOW_TITLE          = "PointCloud3D (Live)"
+INIT_WINDOW_W         = 1200
+INIT_WINDOW_H         = 700
+INIT_CAM_DISTANCE     = 6
+INIT_CAM_ELEVATION    = 10
+INIT_CAM_AZIMUTH      = 45
+PERSPECTIVE_FOV_DEG   = 60        # default perspective FOV
+ORTHO_LIKE_FOV_DEG    = 1         # tiny FOV approximates orthographic
+
+# Axes colors (RGB 0..255)
+AXIS_COLOR_X          = (255,   0,   0)  # X right (red)
+AXIS_COLOR_Y          = (  0, 255,   0)  # Y forward (green)
+AXIS_COLOR_Z          = (  0,   0, 255)  # Z up (blue)
+
+# Point cloud rendering
+POINT_SIZE_INIT       = 1.5
+POINT_SIZE_MIN        = 0.5
+POINT_SIZE_MAX        = 12.0
+DENSITY_SCALE_INIT    = 1.0       # 0.5, 1.0, 2.0
+DENSITY_SCALE_STEP    = 0.5
+DENSITY_SCALE_MIN     = 0.5
+DENSITY_SCALE_MAX     = 2.0
+
+# Interaction steps
+YAW_STEP_DEG          = 5.0
+NEAR_CUT_INIT_M       = 0.75      # drop anything nearer than this distance
+NEAR_CUT_MIN_M        = 0.05
+NEAR_CUT_MAX_M        = 5.0
+NEAR_CUT_STEP_M       = 0.05
+
+# Polling / UI
+POLL_TIMER_MS         = 1         # poll ZMQ as fast as possible
+HUD_QSS               = "QLabel { color: white; background-color: rgba(0,0,0,120); padding: 4px; }"
+
+# ────────────────────────────────────────────────────────────────────────────────
+# ZMQ subscriber (module-level so the class can use it directly)
+zmqCtx = zmq.Context.instance()
+zmqSub = zmqCtx.socket(zmq.SUB)
+zmqSub.setsockopt(zmq.RCVHWM, ZMQ_RCV_HWM)         # prefer newest frame
+zmqSub.connect(ZMQ_CONNECT_ADDR)
+zmqSub.setsockopt_string(zmq.SUBSCRIBE, ZMQ_TOPIC)
+
+# ────────────────────────────────────────────────────────────────────────────────
 class LivePC(QtWidgets.QWidget):
+    """
+    Main widget that renders the 3D scatter and HUD. Uses GLViewWidget from
+    PyQtGraph for fast OpenGL-based point rendering. The scene coordinate frame:
+
+        GL axes: X → right (red), Y → forward (green), Z → up (blue)
+
+    Incoming camera frame is converted from camera coordinates
+    (X right, Y down, Z forward) to GL coordinates as:
+        (Xg, Yg, Zg) = (Xr, Zr, -Yr)
+    """
+
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("PointCloud3D (Live)")
-        self.resize(1200, 700)
+        self.setWindowTitle(WINDOW_TITLE)
+        self.resize(INIT_WINDOW_W, INIT_WINDOW_H)
 
-        # GL view
-        self.view = gl.GLViewWidget()
-        self.view.setCameraPosition(distance=6, elevation=10, azimuth=45)
-        self.view.setCameraParams(fov=60)  # perspective by default
-        self.view.opts['center'] = pg.Vector(0,0,0)
-        self.ortho_mode = False
+        # ---- GL view & camera setup ----
+        self.glView = gl.GLViewWidget()
+        self.glView.setCameraPosition(distance=INIT_CAM_DISTANCE,
+                                      elevation=INIT_CAM_ELEVATION,
+                                      azimuth=INIT_CAM_AZIMUTH)
+        self.glView.setCameraParams(fov=PERSPECTIVE_FOV_DEG)  # perspective by default
+        self.glView.opts['center'] = pg.Vector(0, 0, 0)
+        self.orthoMode = False
 
-        # Axes (GL coords): X right (red), Y forward (green), Z up (blue)
-        self.axes_items = []
-        self._add_axis((0,0,0), (1.0,0,0), (255,  0,  0))  # X red
-        self._add_axis((0,0,0), (0,1.0,0), (  0,255,  0))  # Y green
-        self._add_axis((0,0,0), (0,0,1.0), (  0,  0,255))  # Z blue
+        # ---- World axes (for orientation) ----
+        self.axesItems = []
+        self._add_axis((0, 0, 0), (1.0, 0,   0),   AXIS_COLOR_X)  # X
+        self._add_axis((0, 0, 0), (0,   1.0, 0),   AXIS_COLOR_Y)  # Y
+        self._add_axis((0, 0, 0), (0,   0,   1.0), AXIS_COLOR_Z)  # Z
 
-        # Scatter (opaque for speed/visibility)
+        # ---- Point cloud scatter (opaque for speed/visibility) ----
         self.scatter = gl.GLScatterPlotItem(
-            pos=np.zeros((1,3), dtype=np.float32),
-            color=(1.0,1.0,1.0,1.0),
-            size=1.5,
+            pos=np.zeros((1, 3), dtype=np.float32),
+            color=(1.0, 1.0, 1.0, 1.0),
+            size=POINT_SIZE_INIT,
             pxMode=True
         )
         self.scatter.setGLOptions('opaque')
-        self.view.addItem(self.scatter)
-        self.point_size = 1.5
+        self.glView.addItem(self.scatter)
+        self.pointSize = POINT_SIZE_INIT
 
-        # HUD label
-        self.hud = QtWidgets.QLabel("", self)
-        self.hud.setStyleSheet("QLabel { color: white; background-color: rgba(0,0,0,120); padding: 4px; }")
-        self.hud.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+        # ---- HUD label ----
+        self.hudLabel = QtWidgets.QLabel("", self)
+        self.hudLabel.setStyleSheet(HUD_QSS)
+        self.hudLabel.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
 
-        # Layout
+        # ---- Layout ----
         layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(self.view)
-        layout.addWidget(self.hud)
+        layout.addWidget(self.glView)
+        layout.addWidget(self.hudLabel)
         layout.setStretch(0, 1)
         layout.setStretch(1, 0)
 
-        # Timer to poll ZMQ
-        self.timer = QtCore.QTimer(self)
-        self.timer.timeout.connect(self.update_from_stream)
-        self.timer.start(1)  # as fast as possible
+        # ---- ZMQ poll timer ----
+        self.pollTimer = QtCore.QTimer(self)
+        self.pollTimer.timeout.connect(self.update_from_stream)
+        self.pollTimer.start(POLL_TIMER_MS)
 
-        # State
+        # ---- State (updated by incoming headers) ----
         self.fx = 489.0; self.fy = 460.0
         self.cx = 320.0; self.cy = 240.0
-        self.A = 2.0; self.B = 0.0
-        self.is_metric = False
-        self.rot_yaw = 0.0         # extra yaw rotation around camera Y (forward)
-        self.density_scale = 1.0    # 0.5, 1.0, 2.0
+        self.metricA = 2.0; self.metricB = 0.0
+        self.isMetric = False
+        self.rotYawDeg = 0.0           # extra yaw rotation around camera Y (forward)
+        self.densityScale = DENSITY_SCALE_INIT
+        self.nearCutM = NEAR_CUT_INIT_M
 
-        # Center-on-first-frame
-        self.center_set = False
+        # Center cloud when first points arrive
+        self.centerSet = False
 
-        # Robust close
-        self._running = True
+        # Robust close control
+        self.isRunning = True
 
-    def _add_axis(self, p0, p1, color_rgb):
+    # ───────────── helpers ─────────────
+    def _add_axis(self, p0, p1, colorRgb):
+        """Add a single axis line segment to the GL scene."""
         pts = np.array([p0, p1], dtype=np.float32)
-        col = np.array([[color_rgb[0]/255.0, color_rgb[1]/255.0, color_rgb[2]/255.0, 1.0]]*2, dtype=np.float32)
+        col = np.array([[colorRgb[0]/255.0, colorRgb[1]/255.0, colorRgb[2]/255.0, 1.0]]*2, dtype=np.float32)
         item = gl.GLLinePlotItem(pos=pts, color=col, width=2, antialias=True)
         item.setGLOptions('opaque')
-        self.view.addItem(item)
-        self.axes_items.append(item)
+        self.glView.addItem(item)
+        self.axesItems.append(item)
 
-    # ----------- UI ----------
+    # ───────────── UI / hotkeys (Qt override; name must remain) ─────────────
     def keyPressEvent(self, ev: QtGui.QKeyEvent):
+        """Handle viewer hotkeys (see header)."""
         k = ev.key()
         if k in (QtCore.Qt.Key_Escape, QtCore.Qt.Key_Q):
-            self._running = False
+            self.isRunning = False
             self.close()
         elif k == QtCore.Qt.Key_O:
-            self.ortho_mode = not self.ortho_mode
-            # emulate orthographic by using a tiny FOV
-            self.view.setCameraParams(fov=(1 if self.ortho_mode else 60))
+            self.orthoMode = not self.orthoMode
+            self.glView.setCameraParams(fov=(ORTHO_LIKE_FOV_DEG if self.orthoMode else PERSPECTIVE_FOV_DEG))
         elif k == QtCore.Qt.Key_Plus or k == QtCore.Qt.Key_Equal:
-            self.point_size = min(12.0, self.point_size + 0.5)
-            self.scatter.setData(size=self.point_size)
+            self.pointSize = min(POINT_SIZE_MAX, self.pointSize + 0.5)
+            self.scatter.setData(size=self.pointSize)
         elif k == QtCore.Qt.Key_Minus or k == QtCore.Qt.Key_Underscore:
-            self.point_size = max(0.5, self.point_size - 0.5)
-            self.scatter.setData(size=self.point_size)
+            self.pointSize = max(POINT_SIZE_MIN, self.pointSize - 0.5)
+            self.scatter.setData(size=self.pointSize)
         elif k == QtCore.Qt.Key_BracketRight:
-            self.density_scale = min(2.0, self.density_scale + 0.5)
+            self.densityScale = min(DENSITY_SCALE_MAX, self.densityScale + DENSITY_SCALE_STEP)
         elif k == QtCore.Qt.Key_BracketLeft:
-            self.density_scale = max(0.5, self.density_scale - 0.5)
+            self.densityScale = max(DENSITY_SCALE_MIN, self.densityScale - DENSITY_SCALE_STEP)
         elif k == QtCore.Qt.Key_R:
-            self.rot_yaw += 5.0
+            self.rotYawDeg += YAW_STEP_DEG
         elif k == QtCore.Qt.Key_F:
-            self.rot_yaw -= 5.0
+            self.rotYawDeg -= YAW_STEP_DEG
+        elif k == QtCore.Qt.Key_M:
+            self.nearCutM = min(NEAR_CUT_MAX_M, self.nearCutM + NEAR_CUT_STEP_M)
+        elif k == QtCore.Qt.Key_N:
+            self.nearCutM = max(NEAR_CUT_MIN_M, self.nearCutM - NEAR_CUT_STEP_M)
         elif k == QtCore.Qt.Key_S:
-            # save PNG of the GL view; try readQImage(), else grabFramebuffer()
             fn = f"pc_screenshot_{time.strftime('%Y%m%d_%H%M%S')}.png"
             try:
-                img = self.view.readQImage()
+                img = self.glView.readQImage()
                 img.save(fn)
             except Exception:
                 try:
-                    img = self.view.grabFramebuffer()
+                    img = self.glView.grabFramebuffer()
                     img.save(fn)
                 except Exception as e:
-                    print("[viewer] screenshot failed:", e)
-                    return
+                    print("[viewer] screenshot failed:", e); return
             print(f"[viewer] Saved {fn}")
 
+    # Qt override; must remain camelCase
     def closeEvent(self, ev):
-        self._running = False
+        """Ensure background polling stops when the window closes."""
+        self.isRunning = False
         ev.accept()
 
-    # ----------- ZMQ -> 3D -----------
+    # ───────────── ZMQ → 3D (main update loop) ─────────────
     def update_from_stream(self):
-        if not self._running: return
+        """Poll ZMQ for the newest frame, reconstruct the 3D cloud, and update GL."""
+        if not self.isRunning:
+            return
         try:
-            # drain ZMQ to last (avoid lag)
+            # Drain to the newest packet to avoid lag
             got = False
             while True:
                 try:
-                    topic, header_raw, dn_raw, jpg = sub.recv_multipart(flags=zmq.NOBLOCK)
+                    topic, headerRaw, dnRaw, jpgRaw = zmqSub.recv_multipart(flags=zmq.NOBLOCK)
                     got = True
                 except zmq.Again:
                     break
             if not got:
                 return
 
-            header = json.loads(header_raw.decode("utf-8"))
+            header = json.loads(headerRaw.decode("utf-8"))
             w, h = int(header["w"]), int(header["h"])
-            self.A, self.B = float(header["a"]), float(header["b"])
+            self.metricA, self.metricB = float(header["a"]), float(header["b"])
             self.fx, self.fy = float(header["fx"]), float(header["fy"])
             self.cx, self.cy = float(header["cx"]), float(header["cy"])
-            self.is_metric = bool(header.get("metric", False))
+            self.isMetric = bool(header.get("metric", False))
 
-            dn = np.frombuffer(dn_raw, dtype=np.float16).astype(np.float32).reshape(h, w)
-            cmap = cv2.imdecode(np.frombuffer(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
+            dn = np.frombuffer(dnRaw, dtype=np.float16).astype(np.float32).reshape(h, w)
+            cmap = cv2.imdecode(np.frombuffer(jpgRaw, dtype=np.uint8), cv2.IMREAD_COLOR)
             cmap = cv2.cvtColor(cmap, cv2.COLOR_BGR2RGB)
 
-            # optional density up/down + simple hole-fill via bilinear
-            if self.density_scale != 1.0:
-                interp = cv2.INTER_LINEAR if self.density_scale > 1.0 else cv2.INTER_AREA
-                dn   = cv2.resize(dn,   None, fx=self.density_scale, fy=self.density_scale, interpolation=interp)
-                cmap = cv2.resize(cmap, None, fx=self.density_scale, fy=self.density_scale, interpolation=cv2.INTER_LINEAR)
+            # Optional density rescale (for interactivity only)
+            if self.densityScale != 1.0:
+                interp = cv2.INTER_LINEAR if self.densityScale > 1.0 else cv2.INTER_AREA
+                dn   = cv2.resize(dn,   None, fx=self.densityScale, fy=self.densityScale, interpolation=interp)
+                cmap = cv2.resize(cmap, None, fx=self.densityScale, fy=self.densityScale, interpolation=cv2.INTER_LINEAR)
                 h, w = dn.shape
 
-            # Build 3D (camera → GL): camera(X right, Y down, Z forward)
-            # Map to GL: X -> X, Z(forward) -> Y, and image "down" -> negative Z (up positive).
-            if self.is_metric:
-                Zc = np.clip(self.A * (1.0 - dn) + self.B, 1e-3, 100.0)  # meters (camera Z forward)
-                uu, vv = np.meshgrid(np.arange(w, dtype=np.float32),
-                                     np.arange(h, dtype=np.float32))
-                Xc = (uu - self.cx) * Zc / self.fx               # meters, right
-                Yc = (vv - self.cy) * Zc / self.fy               # meters, down
+            # ---- Near-cut mask & metric Z ----
+            if self.isMetric:
+                # Metric Z (meters) from normalized depth using the provided A/B
+                Zc = np.clip(self.metricA * (1.0 - dn) + self.metricB, 1e-3, 100.0)
+                keep = Zc >= self.nearCutM
             else:
-                Zc = 1.0 - dn
-                uu, vv = np.meshgrid(np.arange(w, dtype=np.float32),
-                                     np.arange(h, dtype=np.float32))
-                Xc = (uu - w*0.5) / float(w)
-                Yc = (vv - h*0.5) / float(h)
+                # Approximate near-cut using the mapping if A is available; otherwise fall back
+                if abs(self.metricA) > 1e-6:
+                    dnCut = 1.0 - (self.nearCutM - self.metricB) / self.metricA
+                else:
+                    dnCut = 0.8
+                dnCut = float(np.clip(dnCut, 0.0, 1.0))
+                keep = dn <= dnCut      # near = high dn → drop
+                Zc = 1.0 - dn           # relative (no units)
 
-            # Viewer yaw about camera Y (forward)
-            yaw = math.radians(self.rot_yaw)
+            # ---- Back-project pixels to 3D in camera frame (X right, Y down, Z forward) ----
+            uu, vv = np.meshgrid(np.arange(w, dtype=np.float32),
+                                 np.arange(h, dtype=np.float32))
+            if self.isMetric:
+                Xc = (uu - self.cx) * Zc / self.fx
+                Yc = (vv - self.cy) * Zc / self.fy
+            else:
+                # Relative XY if intrinsics are not meaningful
+                Xc = (uu - w * 0.5) / float(w)
+                Yc = (vv - h * 0.5) / float(h)
+
+            # ---- Apply viewer yaw around camera Y (forward) ----
+            yaw = math.radians(self.rotYawDeg)
             cyaw, syaw = math.cos(yaw), math.sin(yaw)
-            Xr = Xc*cyaw + Zc*syaw
-            Zr = -Xc*syaw + Zc*cyaw
+            Xr = Xc * cyaw + Zc * syaw
+            Zr = -Xc * syaw + Zc * cyaw
             Yr = Yc
 
-            # Map camera -> GL: (Xr, Zr, -Yr)  -> X (right), Y (forward), Z (up)
+            # ---- Camera → GL mapping: (Xr, Zr, -Yr) ----
             Xg = Xr.astype(np.float32)
             Yg = Zr.astype(np.float32)
             Zg = (-Yr).astype(np.float32)
 
+            # ---- Apply near-cut mask & update GL scatter ----
+            keep = keep.reshape(-1)
             pos = np.stack([Xg, Yg, Zg], axis=-1).reshape(-1, 3).astype(np.float32)
-            col = (cmap.reshape(-1,3).astype(np.float32) / 255.0)
-            col = np.concatenate([col, np.ones((col.shape[0],1), np.float32)], axis=1)  # add alpha
+            col = (cmap.reshape(-1, 3).astype(np.float32) / 255.0)
+            col = np.concatenate([col, np.ones((col.shape[0], 1), np.float32)], axis=1)
+            pos = pos[keep]
+            col = col[keep]
 
-            # Center on first frame so cloud is in view
-            if not self.center_set and pos.size:
+            # Center view on the first valid cloud
+            if not self.centerSet and pos.size:
                 med = np.median(pos, axis=0)
-                self.view.opts['center'] = pg.Vector(float(med[0]), float(med[1]), float(med[2]))
-                self.center_set = True
+                self.glView.opts['center'] = pg.Vector(float(med[0]), float(med[1]), float(med[2]))
+                self.centerSet = True
 
-            # Update scatter efficiently
-            self.scatter.setData(pos=pos, color=col, size=self.point_size, pxMode=True)
+            if pos.size:
+                self.scatter.setData(pos=pos, color=col, size=self.pointSize, pxMode=True)
+            else:
+                # if everything got filtered, draw a transparent dummy point
+                self.scatter.setData(pos=np.zeros((1, 3), np.float32), color=(1, 1, 1, 0), size=self.pointSize)
 
-            self.hud.setText(
-                f"Projection: {'ORTHO-like' if self.ortho_mode else 'Perspective'}   "
-                f"Point size: {self.point_size:.1f}   Density: {self.density_scale:.1f}x   "
-                f"{'Units: meters ' if self.is_metric else 'Units: relative '} "
-                f"(A={self.A:.3f}, B={self.B:.3f})   Axes(GL): X→right (red), Y→forward (green), Z→up (blue)"
+            # ---- HUD text ----
+            self.hudLabel.setText(
+                f"Projection: {'ORTHO-like' if self.orthoMode else 'Perspective'}   "
+                f"Point size: {self.pointSize:.1f}   Density: {self.densityScale:.1f}x   "
+                f"Near-cut: {self.nearCutM:.2f} m   "
+                f"{'Units: meters ' if self.isMetric else 'Units: relative '} "
+                f"(A={self.metricA:.3f}, B={self.metricB:.3f})   "
+                f"Axes(GL): X→right (red), Y→forward (green), Z→up (blue)"
             )
 
         except Exception as e:
             print("[viewer] error:", e)
 
+# ────────────────────────────────────────────────────────────────────────────────
 def main():
+    """Qt application bootstrap and robust Ctrl+C handling."""
     app = QtWidgets.QApplication(sys.argv)
-    w = LivePC()
-    w.show()
-    # robust kill on Ctrl+C
+    widget = LivePC()
+    widget.show()
+
+    # Robust kill on Ctrl+C
     signal.signal(signal.SIGINT, lambda *_: QtWidgets.QApplication.quit())
     sys.exit(app.exec())
 
+# ────────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     main()
