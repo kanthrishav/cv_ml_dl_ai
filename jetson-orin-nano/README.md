@@ -65,7 +65,7 @@ There are few steps I would strongly suggest before beginning any project on the
 3. Setting up VNC on Jetson and accessing it via RealVNC (I got into a lot of errors while doing this)
 4. Checking health of docker engine, nvidia container packages, jetson containerization packages, CUDA, tensorRT and other requirements for LLM/VLM inference
 
-### Check firmware/bootloader/OS/JetPack versions and compare to latest
+### 1. Check firmware/bootloader/OS/JetPack versions and compare to latest
 
 This prints what you have and (best-effort) scrapes NVIDIA pages to show the current latest so you can see if you’re up-to-date. Latest JetPack/L4T references: JetPack page and r36.4.4 release notes.
 
@@ -94,12 +94,85 @@ This prints what you have and (best-effort) scrapes NVIDIA pages to show the cur
 		LATEST_L4T=$(curl -fsSL https://docs.nvidia.com/jetson/archives/r36.4.4/ReleaseNotes/Jetson_Linux_Release_Notes_r36.4.4.pdf 2>/dev/null >/dev/null && echo "r36.4.4" || echo "unknown")
 		echo "Latest Jetson Linux tested here: ${LATEST_L4T}"
 
-### Check snapd-AppArmor and install flatpak
+### 2. Check snapd-AppArmor and install flatpak
 
-### Check firmware/bootloader/OS/JetPack versions and compare to latest
+On some Jetson kernels, AppArmor isn’t enabled ⇒ many snaps won’t run. These commands detect that and either enable what we can (user namespaces), or tell you to prefer Flatpak. (We’ll set up Flatpak in Set 4.)
 
-### Setting up VNC and accessing Jetson via RealVNC
+		set -euo pipefail
 
-###  Checking health of docker engine, nvidia container packages, jetson containerization packages, CUDA, tensorRT and other requirements for LLM/VLM inference
+		echo "=== Install & enable snapd ==="
+		sudo apt update
+		sudo apt install -y snapd apparmor apparmor-utils || true
+		sudo systemctl enable --now snapd
+
+		echo "=== Check kernel features needed by snap ==="
+		if command -v aa-status >/dev/null 2>&1; then
+		  aa-status || true
+		else
+		  echo "AppArmor tools not present."
+		fi
+
+		# Enable user namespaces (needed by snap sandboxes and Chromium/Firefox)
+		echo 'kernel.unprivileged_userns_clone=1' | sudo tee /etc/sysctl.d/90-userns.conf
+		sudo sysctl --system | grep -E 'userns_clone|app' || true
+
+		echo "=== Quick snap sanity ==="
+		snap version || true
+		snap debug sandbox-features || true
+
+		echo "=== Test-run a trivial snap ==="
+		# This will fail cleanly if confinement isn’t supported; that’s OK (we’ll use Flatpak then)
+		sudo snap install hello-world || true
+		snap run hello-world || true
+
+		echo "Note: if sandbox-features shows AppArmor not enabled, prefer Flatpak (see Set 4)."
+
+If your log says something like these:
+
+ - 'aa-status' printed “apparmor not present.” → the AppArmor LSM isn’t enabled in the kernel.
+ - snap debug sandbox-features didn’t show AppArmor enforcement, and snap run hello-world failed with cannot set capabilities: Operation not permitted → classic symptom when snaps try to sandbox without AppArmor support.
+ - Enabling kernel.unprivileged_userns_clone=1 helps snaps in general, but doesn’t replace AppArmor.
+
+If you still want to double confirm you can run the following 
+
+  		# Is AppArmor built/loaded?
+		grep -i apparmor /proc/cmdline
+		cat /sys/module/apparmor/parameters/enabled  # likely: "No such file or directory"
+		dmesg -T | grep -i apparmor || echo "No AppArmor messages in dmesg"
+
+If AppArmor is not enabled in the kernel, you can go for flatpak installation (it uninstalls any Chromium you might have installed during first bootup)
+
+		set -euo pipefail
+
+		sudo apt update
+		sudo apt install -y flatpak
+		sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
+		# Remove browser snaps/apt packages so there’s only one copy on the system
+		sudo snap remove firefox chromium 2>/dev/null || true
+		sudo apt purge -y firefox chromium-browser 2>/dev/null || true
+		sudo apt autoremove -y || true
+
+		# Install browsers from Flathub (multi-arch, no AppArmor required)
+		sudo flatpak install -y flathub org.mozilla.firefox
+		sudo flatpak install -y flathub org.chromium.Chromium
+
+		# Make desktop launchers prefer Flatpak Firefox for xdg-open (optional helper)
+		cat <<'SH' | sudo tee /opt/ai/bin/open-url >/dev/null
+		#!/bin/sh
+		exec flatpak run org.mozilla.firefox "$@"
+		SH
+		sudo chmod +x /opt/ai/bin/open-url
+
+		echo "Flatpak browsers installed. Use:"
+		echo "  flatpak run org.mozilla.firefox"
+		echo "  flatpak run org.chromium.Chromium"
+
+
+### 3. Check firmware/bootloader/OS/JetPack versions and compare to latest
+
+### 4. Setting up VNC and accessing Jetson via RealVNC
+
+### 5. Checking health of docker engine, nvidia container packages, jetson containerization packages, CUDA, tensorRT and other requirements for LLM/VLM inference
 
 
