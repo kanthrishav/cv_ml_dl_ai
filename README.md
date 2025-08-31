@@ -18,7 +18,7 @@ The mini-projects present in this repo are -
  - Cluster-then-homography
  - Axis-aligned rectangles 
 
-  <img width="781" height="441" alt="down_scale_00003_" src="https://github.com/user-attachments/assets/eb4e5c13-cf4a-4b6a-8112-5d09f2cfc7ac" />
+  <img width="782" height="372" alt="image" src="https://github.com/user-attachments/assets/ef036812-165c-4438-b8d1-5ad04dd73408" />
 
 3. Real time depth estimation
  - Monocular depth pipeline using a Raspberry Pi 5, IMX500 camera, and a lightweight depth model.
@@ -33,7 +33,7 @@ The mini-projects present in this repo are -
 
    <img width="866" height="441" alt="down_scale_00005_" src="https://github.com/user-attachments/assets/c45077a7-1ae6-42db-94c2-decef4fdca44" />
 
-   <img width="866" height="441" alt="down_scale_00005_" src="https://github.com/user-attachments/assets/8d1e007e-16d6-4d9a-99ab-9a334e82f5d7" />
+   <img width="850" height="418" alt="down_scale_00001_" src="https://github.com/user-attachments/assets/84ae3219-13c8-4778-9ebb-2f86dce7cb05" />
 
 4.  Near real time image classification using transfer learning to fine tune lightweight MobileNetV2 on openimages and perform inference with TFLite (raspberry pi)
 5.  Near real time object detection using yolov5n and yolov5s and classifying using fine tuned MobileNetV2 from previous project (raspberry pi)
