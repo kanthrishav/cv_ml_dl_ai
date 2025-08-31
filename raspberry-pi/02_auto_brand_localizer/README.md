@@ -1,10 +1,10 @@
 # Brand Localizer on Raspberry Pi 5 with IMX500
 
-<img width="1562" height="882" alt="image" src="https://github.com/user-attachments/assets/658a3a98-124e-4211-b907-aa274946093b" />
+<img width="774" height="436" alt="down_scale_00019_" src="https://github.com/user-attachments/assets/0a4e32f8-042f-41fb-bf0c-4fe05f485b7b" />
 
-<img width="1568" height="885" alt="image" src="https://github.com/user-attachments/assets/37bea4ef-6c80-493e-a753-686c6ce047b0" />
+<img width="784" height="442" alt="down_scale_00020_" src="https://github.com/user-attachments/assets/61bf0576-d8ae-4937-bafb-0671b4381c6c" />
 
-<img width="1548" height="872" alt="image" src="https://github.com/user-attachments/assets/1ec7bb08-d985-48b2-99f8-14a162ad97f8" />
+<img width="781" height="441" alt="down_scale_00021_" src="https://github.com/user-attachments/assets/b1c0ffb5-3599-48ae-934a-ee8f778fd9fc" />
 
 A compact, template-based logo detector that counts multiple brands in real time using classical CV on the Raspberry Pi. This README documents the approach, the variants, why each technique was chosen, and how the system evolved.
 
