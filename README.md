@@ -1,4 +1,4 @@
-<img width="781" height="441" alt="down_scale_00003_" src="https://github.com/user-attachments/assets/83817733-0a71-4668-a4a0-09621e8e9569" /># Edge Vision and AI Inference
+# Edge Vision and AI Inference
 
 This repo contains my experiments with SBC and SOCs like the Rapsberry PI 5 and Jetson Orin Nano 
 
