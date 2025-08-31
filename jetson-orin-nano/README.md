@@ -44,6 +44,7 @@ Apart from the Dev Kit I used
 - & mouse.
 
 Landing page of the product from Nvidia : https://www.nvidia.com/en-in/autonomous-machines/embedded-systems/jetson-orin/nano-super-developer-kit/
+
 Datasheet from Nvidia : https://nvdam.widen.net/s/zkfqjmtds2/jetson-orin-datasheet-nano-developer-kit-3575392-r2
 
 ## Flashing the OS
