@@ -1,4 +1,4 @@
-<img width="125" height="23" alt="image" src="https://github.com/user-attachments/assets/86fdd45f-8e2c-4268-80f4-0724bea3f81b" /># Edge Vision and AI Inference
+# Edge Vision and AI Inference
 
 This repo contains my experiments with SBC and SOCs like the Rapsberry PI 5 and Jetson Orin Nano 
 
@@ -55,5 +55,5 @@ The mini-projects present in this repo are -
  - Tests the code
  - Performs corrections in the code and the tests
  - Generates Readme and comments the code
- - personal github repo of the coding agent - astro_repos
+ - personal github repo of the coding agent - [astro_repos](https://github.com/kanthrishav/astro_repos)
 
