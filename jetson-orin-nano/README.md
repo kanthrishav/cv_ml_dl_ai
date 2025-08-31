@@ -66,6 +66,8 @@ There are few steps I would strongly suggest before beginning any project on the
 3. Setting up VNC on Jetson and accessing it via RealVNC (I got into a lot of errors while doing this)
 4. Checking health of docker engine, nvidia container packages, jetson containerization packages, CUDA, tensorRT and other requirements for LLM/VLM inference
 
+To setup the SSD this link from Nvidia Jetson AI labs would suffice : https://www.jetson-ai-lab.com/tips_ssd-docker.html
+
 ### 1. Check firmware/bootloader/OS/JetPack versions and compare to latest
 
 This prints what you have and (best-effort) scrapes NVIDIA pages to show the current latest so you can see if you’re up-to-date. Latest JetPack/L4T references: JetPack page and r36.4.4 release notes.
