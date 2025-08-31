@@ -405,5 +405,25 @@ If you want to reset the password :
 		echo "- PASS if: container probe lists /dev/nvhost* and at least libcudart.so (TensorRT libs shown if using l4t-jetpack)"
 		echo "- If any FAIL/WARN above, paste that section and we’ll zero in without changing your system."
 
+## Beyond setting up
 
+I have already tried out and using the following AI inference servers, UIs and setups
+1. ollama server with the following models
+ - dolphincoder:7b-starcoder2-q4_K_M     4.6 GB
+ - codeqwen:7b                           4.2 GB
+ - deepseek-coder:6.7b-instruct-q4_K_M   4.1 GB
+ - deepseek-coder:6.7b-instruct          3.8 GB
+ - llama3.1:8b                           4.9 GB
+ - qwen2.5-coder:7b                      4.7 GB
+ - llava:7b                              4.7 GB
+ - moondream:latest                      1.7 GB
+ - granite3.2:8b                         4.9 GB
+ - llama3.1:8b-instruct-q4_K_M           4.9 GB
+ - llama3.2:3b                           2.0 GB
 
+You can see the storage space these smaller models take.
+
+2. Open webUI and using the ollama server in the backend to get a chatgpt type chat interface
+3. Stable Diffusion to get a UI for generating images
+4. ComfyUI for creating larger vision workflows
+5. Building a generic coding agent that uses ollama server in the backend
