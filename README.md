@@ -1,4 +1,4 @@
-# Edge Vision and AI Inference
+<img width="781" height="441" alt="down_scale_00003_" src="https://github.com/user-attachments/assets/83817733-0a71-4668-a4a0-09621e8e9569" /># Edge Vision and AI Inference
 
 This repo contains my experiments with SBC and SOCs like the Rapsberry PI 5 and Jetson Orin Nano 
 
@@ -9,7 +9,7 @@ The mini-projects present in this repo are -
  - Transforming and warping the extracted contour
  - Extracting text from warpped contour using tesseract
 
-  <img width="750" height="455" alt="down_scale_00002_" src="https://github.com/user-attachments/assets/7370b27b-3211-4b8c-9e11-6868582c40ff" />
+  <img width="750" height="455" alt="down_scale_00002_" src="https://github.com/user-attachments/assets/07cfe0d1-062a-4f37-9e41-29ed2d0c44df" />
    
 2. Near real time Automatic brand detection and counting using template images of various brands
  - using 5 MP RPI Camera and RPI AI Camera (Sony IMX500)
@@ -18,7 +18,7 @@ The mini-projects present in this repo are -
  - Cluster-then-homography
  - Axis-aligned rectangles 
 
-  <img width="1562" height="882" alt="image" src="https://github.com/user-attachments/assets/dbe8da33-9b3b-4c3b-b7ec-70f667f45d80" />
+  <img width="781" height="441" alt="down_scale_00003_" src="https://github.com/user-attachments/assets/eb4e5c13-cf4a-4b6a-8112-5d09f2cfc7ac" />
 
 3. Real time depth estimation
  - Monocular depth pipeline using a Raspberry Pi 5, IMX500 camera, and a lightweight depth model.
@@ -29,11 +29,11 @@ The mini-projects present in this repo are -
  - Publishes depth at its native size with intrinsics for that exact size.
  - Unified live 3D point-cloud viewer (Qt + PyQtGraph OpenGL).
 
-  <img width="1742" height="951" alt="image" src="https://github.com/user-attachments/assets/45eababb-5fd8-412c-906f-d76cfe87d549" />
+   <img width="871" height="476" alt="down_scale_00004_" src="https://github.com/user-attachments/assets/b1efd3e8-49fa-4c18-af42-dec8c278ede3" />
 
-  <img width="1733" height="882" alt="image" src="https://github.com/user-attachments/assets/a14d964a-b1b1-4051-80b1-b4e28e93d692" />
+   <img width="866" height="441" alt="down_scale_00005_" src="https://github.com/user-attachments/assets/c45077a7-1ae6-42db-94c2-decef4fdca44" />
 
-  <img width="1701" height="835" alt="image" src="https://github.com/user-attachments/assets/c31e7fd6-2af9-42db-ad68-35ae5630aaaa" />
+   <img width="866" height="441" alt="down_scale_00005_" src="https://github.com/user-attachments/assets/8d1e007e-16d6-4d9a-99ab-9a334e82f5d7" />
 
 4.  Near real time image classification using transfer learning to fine tune lightweight MobileNetV2 on openimages and perform inference with TFLite (raspberry pi)
 5.  Near real time object detection using yolov5n and yolov5s and classifying using fine tuned MobileNetV2 from previous project (raspberry pi)
