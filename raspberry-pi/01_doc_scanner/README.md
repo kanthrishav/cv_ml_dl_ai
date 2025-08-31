@@ -1,6 +1,6 @@
 # Document Scanner (RPi 5 + Picamera2 + OpenCV) — README
 
-<img width="766" height="443" alt="image" src="https://github.com/user-attachments/assets/fa0839bd-9b3b-4a50-9a70-a739bbc2128c" />
+<img width="766" height="444" alt="down_scale_00007_" src="https://github.com/user-attachments/assets/815df222-4195-43ff-b45a-af66a00e0fcf" />
 
 Robust, orientation-agnostic document detection and scan warping on Raspberry Pi 5 (IMX500 + Picamera2), with optional OCR and auto-rotation.
 
@@ -89,20 +89,15 @@ Alternatives: Hough-based baseline voting / gradient-energy ratios; good backups
 1. Edge-map first.
 Validated Canny settings across all orientations (0–360°) and lighting on the actual tiled floor. Added closing + dilation to keep the border continuous when the page was diagonal. Alternatives (Sobel/Laplacian) were noisier and less selective. 
 
-<img width="1191" height="892" alt="image" src="https://github.com/user-attachments/assets/d65dea41-83f4-45f8-b6d6-d0af75d93a44" />
-
+<img width="596" height="446" alt="down_scale_00008_" src="https://github.com/user-attachments/assets/67745a6f-bd0d-4830-90c8-9f566181d224" />
 
 2. Full contour map.
 Ensured the document outline appears reliably by switching to RETR_EXTERNAL to ignore internal text contours; this eliminated many false positives from small text blobs. 
 
-<img width="1187" height="888" alt="image" src="https://github.com/user-attachments/assets/0ae2e64e-781a-4fa7-97c7-4ee2f05eb127" />
-
+<img width="594" height="444" alt="down_scale_00009_" src="https://github.com/user-attachments/assets/98be3c6e-066b-4a2d-82b4-8ef294b6afcb" />
 
 3. Ranking the candidates.
 Verified that the true page contour lands in the top few by area in all scenes; used Top-K truncation for speed.
-
-<img width="1190" height="891" alt="image" src="https://github.com/user-attachments/assets/6f782e2c-0814-403c-805c-df4efddae934" />
-
 
 4. Selection criteria (narrowing down).
 Rejected non-pages using:
@@ -125,23 +120,23 @@ Switched to averaging opposite sides to estimate target w×h and then getPerspec
 11. Orientation stabilization.
 Added Tesseract OSD and a small majority window to prevent flip-flop near 90°/180° ambiguities; kept it optional so OCR costs are paid only when needed. 
 
-<img width="1500" height="910" alt="image" src="https://github.com/user-attachments/assets/e7fe9756-278c-49d8-a5c9-54963d5fc71a" />
+<img width="750" height="455" alt="down_scale_00010_" src="https://github.com/user-attachments/assets/2ba22bc5-26c9-4a19-9fe4-78650b6b4e57" />
 
-<img width="1393" height="896" alt="image" src="https://github.com/user-attachments/assets/1449ab19-5e47-4b9f-b4c3-c784501a99c3" />
+<img width="696" height="448" alt="down_scale_00011_" src="https://github.com/user-attachments/assets/1ed662c1-8fba-4f50-92e4-147b0acf17d5" />
 
-<img width="1262" height="897" alt="image" src="https://github.com/user-attachments/assets/b55a7519-bea3-458f-963a-8c9373249cd1" />
+<img width="631" height="448" alt="down_scale_00012_" src="https://github.com/user-attachments/assets/813cd2d4-8cc8-4ddf-8f3c-0a0c8049576e" />
 
-<img width="1702" height="622" alt="image" src="https://github.com/user-attachments/assets/5dea372c-f3e8-41f0-b76f-6db249a48bdd" />
+<img width="851" height="311" alt="down_scale_00013_" src="https://github.com/user-attachments/assets/9df4acf3-2dfa-46c3-aa99-5a361480080f" />
 
-<img width="1706" height="631" alt="image" src="https://github.com/user-attachments/assets/40a46a99-8a29-4456-908f-a5dce23d16d2" />
+<img width="853" height="316" alt="down_scale_00014_" src="https://github.com/user-attachments/assets/f0381873-1efa-4957-b310-7704d3246ea0" />
 
-<img width="1682" height="691" alt="image" src="https://github.com/user-attachments/assets/bff321e8-4d13-4bb3-8eb0-f4ee6280bae4" />
+<img width="841" height="346" alt="down_scale_00015_" src="https://github.com/user-attachments/assets/ff15aa2d-a649-4df8-a78e-c12d5e1d047c" />
 
-<img width="1450" height="897" alt="image" src="https://github.com/user-attachments/assets/e04753fd-7459-4c92-bc8a-7dc857385ec7" />
+<img width="725" height="448" alt="down_scale_00016_" src="https://github.com/user-attachments/assets/6c058373-e022-4cab-9f1f-81b24a6c2878" />
 
-<img width="1450" height="863" alt="image" src="https://github.com/user-attachments/assets/9e32edf3-dccd-4821-8d2e-1a7775c5d73c" />
+<img width="725" height="432" alt="down_scale_00017_" src="https://github.com/user-attachments/assets/d8f1bd6d-f8d6-4ea7-9fcc-e7ea601a4b00" />
 
-<img width="1505" height="893" alt="image" src="https://github.com/user-attachments/assets/0e4b8b30-b8ee-44b9-9a3d-09c87d65ca9f" />
+<img width="752" height="446" alt="down_scale_00018_" src="https://github.com/user-attachments/assets/513a1e6f-8d5b-42fd-98fe-4a92ea81cd78" />
 
 ## What this setup filters out (by design)
 
