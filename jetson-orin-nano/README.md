@@ -17,7 +17,7 @@ Specifications :
  - Ethernet : 1 x RJ45 Gigabit Ethernet
  - USB connector : 4 x USB 3.2 Type A connector, 1 x USB-C port for only data
  - Camera port : 2 x CSI Camera (MIPI CSI-2)
- - Storage : microSD card slot, NVMe M.2 2242/2280 SSD slot
+ - Storage : microSD card slot, NVMe M.2 2242/2280 PCIe Gen3 SSD slot
  - Display :  1 x Dsiplay Port 1.2
 
 Before proceeding towards the setup, I will provide a way to starting with this board activated for highest performance. I went down multiple routes mainly to explore. So, I will say this - for running any kind of LLM/VLM models you will need the following : 
@@ -25,11 +25,34 @@ Before proceeding towards the setup, I will provide a way to starting with this 
 2. Minimum 128 GB microSD card for only OS and to act as your root volume
 3. Minimum 1 TB NVMe SSD (for storing a plethora of AI model checkpoints, docker containers, Lora adapters, etc)
 
+
 Based on my experience, if you miss either of these 3 requirements, you will know very very very soon that you need those now!
+ - I have all my containers and all the AI models present in the NVMe SSD.
+ - Currently 53 GB of microSD and 440 GB of SSD is already consumed.
+ - most 8B models with their docker containers fills up the 90% of RAM  (7.4 GB).
+ - coding agent alone fills up the RAM when prompting to the LLM model.
+ - So, you get the picture.
+ - If you purchase a Gen4 NVMe SSD, the performance will be downgraded to Gen3.
+ - The next Jetson board costs 4 times than this one. So, Nvidia really brought down the cost with this one.
 
-Apart from these I used a display monitor, a display port to HDMI cable (since my monitor takes HDMI input only), keyboard and mouse.
+Apart from the Dev Kit I used 
+- HP 128GB MicroSD Memory Card SDXC mx310 Class 10 UHS-I U1 Card,
+- WD_Black Western Digital SN7100 1TB PCIe Gen 4 NVMe SSD M.2 (2280)
+- a display monitor,
+- a display port to HDMI cable (since my monitor takes HDMI input only),
+- keyboard
+- & mouse.
 
-
+Landing page of the product from Nvidia : https://www.nvidia.com/en-in/autonomous-machines/embedded-systems/jetson-orin/nano-super-developer-kit/
+Datasheet from Nvidia : https://nvdam.widen.net/s/zkfqjmtds2/jetson-orin-datasheet-nano-developer-kit-3575392-r2
 
 ## Flashing the OS
 
+The OS is called "Jetpack" which is a variant of Ubuntu. Refer to this link to know more about the contents of the Jetpack OS : https://developer.nvidia.com/embedded/jetpack
+
+I followed the information present on the Nvidia's official instructions website and the following installation video shared by Bijan Bowen
+1. https://developer.nvidia.com/embedded/learn/get-started-jetson-orin-nano-devkit
+2. The above page kind of takes you to multiple pages based on your specific board
+3. https://www.youtube.com/watch?v=-PjMC0gyH9s&t=2966s
+
+The above links were enough to handle any flashing and first bootup related issues.
