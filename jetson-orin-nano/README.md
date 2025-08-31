@@ -1,6 +1,6 @@
 # NVIDIA JETSON ORIN NANO 8GB
 
-![jetson-orin-nano-super-developer-kit-og](https://github.com/user-attachments/assets/88b7fafb-ce85-4a10-887c-b9c9595899c3)
+<img width="600" height="315" alt="down_scale_00006_" src="https://github.com/user-attachments/assets/4543774c-58ea-4ee7-b3f0-c66c7d7f474a" />
 
 ## Overview 
 
