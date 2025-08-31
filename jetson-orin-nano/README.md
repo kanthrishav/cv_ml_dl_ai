@@ -56,3 +56,52 @@ I followed the information present on the Nvidia's official instructions website
 3. https://www.youtube.com/watch?v=-PjMC0gyH9s&t=2966s
 
 The above links were enough to handle any flashing and first bootup related issues.
+
+## Post first boot-up
+
+There are few steps I would strongly suggest before beginning any project on the board - 
+1. Checking OS and firmware version and confirming with the latest version available for the board
+2. For me certain applications like the web browser couldn't launch at all - snapd-AppArmor issue
+3. Setting up VNC on Jetson and accessing it via RealVNC (I got into a lot of errors while doing this)
+4. Checking health of docker engine, nvidia container packages, jetson containerization packages, CUDA, tensorRT and other requirements for LLM/VLM inference
+
+### Check firmware/bootloader/OS/JetPack versions and compare to latest
+
+This prints what you have and (best-effort) scrapes NVIDIA pages to show the current latest so you can see if you’re up-to-date. Latest JetPack/L4T references: JetPack page and r36.4.4 release notes.
+
+'''
+set -euo pipefail
+
+echo "=== Host / kernel / Ubuntu ==="
+uname -a
+lsb_release -a || cat /etc/os-release
+
+echo "=== L4T / JetPack mapping (L4T string) ==="
+# Shows L4T line; e.g. "# R36 (release), REVISION: 4.4, ..."
+head -n1 /etc/nv_tegra_release || true
+dpkg -l | egrep -i '^ii\s+nvidia-l4t|^ii\s+nvidia-jetpack' || echo "JetPack meta package not installed (normal on many images)."
+
+echo "=== Key NVIDIA stack ==="
+dpkg -l | egrep -i 'cuda-|^ii\s+nvidia-l4t-|cudnn|tensorrt|nvinfer' | awk '{print $1,$2,$3}' || true
+
+echo "=== UEFI/bootloader (Orin: check UEFI in firmware menu if needed) ==="
+# On Orin devkits, UEFI version is shown in the UEFI menu (ESC at boot). For reference:
+echo "Tip: Press ESC during boot to read UEFI version as per NVIDIA setup guide."
+
+# --- Compare with latest (best-effort scrape) ---
+echo "=== Latest (online) per NVIDIA (best-effort) ==="
+LATEST_JETPACK=$(curl -fsSL https://developer.nvidia.com/embedded/jetpack | grep -oE 'JetPack [0-9]+\.[0-9]+(\.[0-9]+)?' | head -n1 || true)
+echo "Latest on JetPack page: ${LATEST_JETPACK:-unknown}"
+LATEST_L4T=$(curl -fsSL https://docs.nvidia.com/jetson/archives/r36.4.4/ReleaseNotes/Jetson_Linux_Release_Notes_r36.4.4.pdf 2>/dev/null >/dev/null && echo "r36.4.4" || echo "unknown")
+echo "Latest Jetson Linux tested here: ${LATEST_L4T}"
+'''
+
+### Check snapd-AppArmor and install flatpak
+
+### Check firmware/bootloader/OS/JetPack versions and compare to latest
+
+### Setting up VNC and accessing Jetson via RealVNC
+
+###  Checking health of docker engine, nvidia container packages, jetson containerization packages, CUDA, tensorRT and other requirements for LLM/VLM inference
+
+
