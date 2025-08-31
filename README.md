@@ -9,7 +9,7 @@ The mini-projects present in this repo are -
  - Transforming and warping the extracted contour
  - Extracting text from warpped contour using tesseract
 
-  [<img width="1500" height="910" alt="image" src="https://github.com/user-attachments/assets/a83ffe0a-a7a7-4d09-b23a-2644eb929057" />]
+  <img width="1500" height="910" alt="image" src="https://github.com/user-attachments/assets/a83ffe0a-a7a7-4d09-b23a-2644eb929057" />
 
    
 2. Near real time Automatic brand detection and counting using template images of various brands
