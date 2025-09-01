@@ -1,0 +1,47 @@
+services:
+  comfyui:
+    image: dustynv/comfyui:r36.4.0
+    container_name: comfyui
+
+    # Expose ComfyUI
+    ports:
+      - "8188:8188"
+
+    # Persist everything on /ssd
+    volumes:
+      - /ssd/comfyui/models:/opt/ComfyUI/models
+      - /ssd/comfyui/custom_nodes:/opt/ComfyUI/custom_nodes
+      - /ssd/comfyui/input:/opt/ComfyUI/input
+      - /ssd/comfyui/output:/opt/ComfyUI/output
+      - /ssd/comfyui/cache:/root/.cache
+      - /ssd/comfyui/pip-cache:/data/pip-cache
+      - /ssd/comfyui/pip/pip.conf:/etc/pip.conf:ro
+      - /ssd/comfyui/pip/constraints.txt:/etc/pip-constraints.txt:ro
+
+    environment:
+      # ComfyUI flags tuned for 8GB Jetson
+      COMFYUI_ARGS: "--listen 0.0.0.0 --port 8188 --lowvram --use-sdp-attention --dont-upcast-attention"
+      # Only use supported allocator knob (your old 'garbage_collect_threshold' caused the crash)
+      PYTORCH_CUDA_ALLOC_CONF: "max_split_size_mb:64"
+
+      # Pip behavior (honor pins & cache to SSD)
+      PIP_CACHE_DIR: /data/pip-cache
+      PIP_CONSTRAINT: /etc/pip-constraints.txt
+      PIP_INDEX_URL: https://pypi.org/simple
+      PIP_EXTRA_INDEX_URL: https://pypi.jetson-ai-lab.dev/jp6/cu126
+
+      # Helpful on Jetson
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: all
+
+    # GPU runtime on Jetson
+    runtime: nvidia
+
+    # Simple healthcheck waits for UI
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8188"]
+      interval: 30s
+      timeout: 5s
+      retries: 20
+
+    restart: unless-stopped
