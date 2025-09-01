@@ -65,32 +65,41 @@ https://github.com/user-attachments/assets/fa38dda3-ef41-4131-b1f1-dc45c73824b3
 
 ******************************************************************************************************************************************************************************************************************
 
+## 6. Setting up and creating workflows using ComfyUI to create deterministic workflows to perform vision tasks with numerous model checkpoints, Lora adaptors, embeddings, etc for image generation
 
-## 6.  Near real time image classification using transfer learning to fine tune lightweight MobileNetV2 on openimages and perform inference with TFLite (raspberry pi)
+Example of converting a random empty living room into an Indian, a Parisian and a Japanese living room
 
-******************************************************************************************************************************************************************************************************************
+<img width="1917" height="975" alt="image" src="https://github.com/user-attachments/assets/128bdb5a-fc98-4a00-b74a-045aee4ff844" />
 
-
-## 7.  Near real time object detection using yolov5n and yolov5s and classifying using fine tuned MobileNetV2 from previous project (raspberry pi)
-
-******************************************************************************************************************************************************************************************************************
+<table><tr><td><img width="400" height="260" alt="indian" src="https://github.com/user-attachments/assets/e1eb60c8-729f-42e7-9f7e-707a4dbda6e8" /></td><td><img width="400" height="260" alt="japanese" src="https://github.com/user-attachments/assets/d1e0fbb1-4f45-4ed5-9f6f-ccbec0c368f8" /></td><td><img width="400" height="260" alt="parisian" src="https://github.com/user-attachments/assets/f0d04e03-5385-4aec-9741-e52cc2704087" /></td></tr></table>
 
 
-## 8.  Near real time edge segmentation using pretrained LRASPP MobileNetV3 together with adding the detector and classifier from the last two projects (raspberry pi)
+https://github.com/user-attachments/assets/d3562c5a-5be4-4555-8d1e-7814312debb1
 
 ******************************************************************************************************************************************************************************************************************
 
 
-## 9.  Eye-blink detection using openCV (raspberry pi)
+## 7.  Near real time image classification using transfer learning to fine tune lightweight MobileNetV2 on openimages and perform inference with TFLite (raspberry pi)
 
 ******************************************************************************************************************************************************************************************************************
 
 
-## 10. Setting up vision inferencing Stable Diffusion UI
+## 8.  Near real time object detection using yolov5n and yolov5s and classifying using fine tuned MobileNetV2 from previous project (raspberry pi)
 
 ******************************************************************************************************************************************************************************************************************
 
-## 11. Setting up and creating workflows using ComfyUI to create deterministic workflows to perform vision tasks with numerous model checkpoints, Lora adaptors, embeddings, etc for image generation
+
+## 9.  Near real time edge segmentation using pretrained LRASPP MobileNetV3 together with adding the detector and classifier from the last two projects (raspberry pi)
+
+******************************************************************************************************************************************************************************************************************
+
+
+## 10.  Eye-blink detection using openCV (raspberry pi)
+
+******************************************************************************************************************************************************************************************************************
+
+
+## 11. Setting up vision inferencing Stable Diffusion UI
 
 ******************************************************************************************************************************************************************************************************************
 
