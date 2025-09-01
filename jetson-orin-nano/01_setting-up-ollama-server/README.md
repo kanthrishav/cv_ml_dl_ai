@@ -253,3 +253,21 @@ We could have used the upstream ollama/ollama image. On Jetson, it’s safer to 
 3. To access ollama from a different device on the same network
 
        curl http://JETSON_IP:11434/api/version
+
+## Models - what to use and when to use
+
+| Model | Need | Pull | Start |
+|---|---|---|
+| Qwen2.5-Coder 7B | Strong coding, modern	| ollama pull qwen2.5-coder:7b	| ollama run qwen2.5-coder:7b |
+| StarCoder2 7B | OSS, balanced	| ollama pull starcoder2:7b | ollama run starcoder2:7b |
+
+Similarly, 
+Stable-Code 3B
+Llama 3.1 8B Instruct
+Phi-4
+Granite-3.2 8B
+Llama3-ChatQA 8B
+MiniCPM-V
+LLaVA 7B
+Moondream 2
+
