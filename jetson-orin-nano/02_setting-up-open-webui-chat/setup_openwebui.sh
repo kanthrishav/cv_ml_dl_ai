@@ -41,8 +41,8 @@ ok "Ollama container is running."
 info "Step 2/8: Creating SSD folders for Open WebUI persistent data and library"
 OWUI_DATA="/ssd/openwebui/data"
 OWUI_LIB="/ssd/openwebui/library"
-mkdir -p "${OWUI_DATA}" "${OWUI_LIB}"
-chown -R "$(id -u)":"$(id -g)" /ssd/openwebui || true
+sudo mkdir -p "${OWUI_DATA}" "${OWUI_LIB}"
+sudo chown -R "$(id -u)":"$(id -g)" /ssd/openwebui || true
 ok "Created: ${OWUI_DATA} (writable) and ${OWUI_LIB} (read-only mount for documents)."
 
 # --------------------------
