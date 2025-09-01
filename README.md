@@ -36,13 +36,8 @@ The mini-projects present in this repo are -
  - Publishes depth at its native size with intrinsics for that exact size.
  - Unified live 3D point-cloud viewer (Qt + PyQtGraph OpenGL).
 
-     <img width="871" height="476" alt="down_scale_00004_" src="https://github.com/user-attachments/assets/b1efd3e8-49fa-4c18-af42-dec8c278ede3" />
+<table><tr><td><img width="871" height="476" alt="down_scale_00004_" src="https://github.com/user-attachments/assets/b1efd3e8-49fa-4c18-af42-dec8c278ede3" /></td><td><img width="866" height="441" alt="down_scale_00005_" src="https://github.com/user-attachments/assets/c45077a7-1ae6-42db-94c2-decef4fdca44" /></td><td><img width="850" height="418" alt="down_scale_00001_" src="https://github.com/user-attachments/assets/84ae3219-13c8-4778-9ebb-2f86dce7cb05" /></td></tr></table>
 
-
-     <img width="866" height="441" alt="down_scale_00005_" src="https://github.com/user-attachments/assets/c45077a7-1ae6-42db-94c2-decef4fdca44" />
-
-  
-     <img width="850" height="418" alt="down_scale_00001_" src="https://github.com/user-attachments/assets/84ae3219-13c8-4778-9ebb-2f86dce7cb05" />
 
 ******************************************************************************************************************************************************************************************************************
 
@@ -65,7 +60,7 @@ https://github.com/user-attachments/assets/fa38dda3-ef41-4131-b1f1-dc45c73824b3
 
 ******************************************************************************************************************************************************************************************************************
 
-## 6. Setting up and creating workflows using ComfyUI to create deterministic workflows to perform vision tasks with numerous model checkpoints, Lora adaptors, embeddings, etc for image generation
+## 6. Setting up and creating workflows using ComfyUI to create deterministic workflows to perform vision tasks with numerous model checkpoints, Lora adaptors, embeddings, etc for image generation (running 100% locally)
 
 Example of converting a random empty living room into an Indian, a Parisian and a Japanese living room
 
