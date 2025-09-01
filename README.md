@@ -3,6 +3,7 @@
 This repo contains my experiments with SBC and SOCs like the Rapsberry PI 5 and Jetson Orin Nano 
 
 The mini-projects present in this repo are - 
+
 ## 1. Real time scanning of document placed at arbitraty location, arbitrary orientation from a video feed and extracting text from it using Raspberry Pi 5, 5 MP camera and RPI AI camera
  - This involves use of edge detection and image processing algorithms like Sobel, Canny and CLAHE
  - Performing contour extraction and selection using OpenCV apis
@@ -10,6 +11,9 @@ The mini-projects present in this repo are -
  - Extracting text from warpped contour using tesseract
 
     <img width="750" height="455" alt="down_scale_00002_" src="https://github.com/user-attachments/assets/07cfe0d1-062a-4f37-9e41-29ed2d0c44df" />
+
+******************************************************************************************************************************************************************************************************************
+
    
 ## 2. Near real time Automatic brand detection and counting using template images of various brands
  - using 5 MP RPI Camera and RPI AI Camera (Sony IMX500)
@@ -19,6 +23,9 @@ The mini-projects present in this repo are -
  - Axis-aligned rectangles 
 
     <img width="782" height="372" alt="image" src="https://github.com/user-attachments/assets/ef036812-165c-4438-b8d1-5ad04dd73408" />
+
+******************************************************************************************************************************************************************************************************************
+
 
 ## 3. Real time depth estimation
  - Monocular depth pipeline using a Raspberry Pi 5, IMX500 camera, and a lightweight depth model.
@@ -37,12 +44,17 @@ The mini-projects present in this repo are -
   
      <img width="850" height="418" alt="down_scale_00001_" src="https://github.com/user-attachments/assets/84ae3219-13c8-4778-9ebb-2f86dce7cb05" />
 
+******************************************************************************************************************************************************************************************************************
+
+
 ## 4.  Inferencing LLM models using ollama CLI on Jetson Orin Nano (running 100% locally)
 
 <img width="1200" height="630" alt="image" src="https://github.com/user-attachments/assets/8574c0e3-fe2a-4732-81ca-d43843bba51e" />
 
 
 https://github.com/user-attachments/assets/920d8ddd-b529-4203-ada7-4a97d128e0d6
+
+******************************************************************************************************************************************************************************************************************
 
   
 ## 5.  Inferencing LLM models using ollama server and Open Web UI on Jetson Orin Nano (running 100% locally)
@@ -51,16 +63,37 @@ https://github.com/user-attachments/assets/920d8ddd-b529-4203-ada7-4a97d128e0d6
 
 https://github.com/user-attachments/assets/fa38dda3-ef41-4131-b1f1-dc45c73824b3
 
+******************************************************************************************************************************************************************************************************************
+
+
 ## 6.  Near real time image classification using transfer learning to fine tune lightweight MobileNetV2 on openimages and perform inference with TFLite (raspberry pi)
+
+******************************************************************************************************************************************************************************************************************
+
 
 ## 7.  Near real time object detection using yolov5n and yolov5s and classifying using fine tuned MobileNetV2 from previous project (raspberry pi)
 
+******************************************************************************************************************************************************************************************************************
+
+
 ## 8.  Near real time edge segmentation using pretrained LRASPP MobileNetV3 together with adding the detector and classifier from the last two projects (raspberry pi)
+
+******************************************************************************************************************************************************************************************************************
+
 
 ## 9.  Eye-blink detection using openCV (raspberry pi)
 
+******************************************************************************************************************************************************************************************************************
+
+
 ## 10. Setting up vision inferencing Stable Diffusion UI
+
+******************************************************************************************************************************************************************************************************************
+
 ## 11. Setting up and creating workflows using ComfyUI to create deterministic workflows to perform vision tasks with numerous model checkpoints, Lora adaptors, embeddings, etc for image generation
+
+******************************************************************************************************************************************************************************************************************
+
 ## 12. Building a generic coding agent using the ollama backend
  - Has access to multiple 7B to 8B LLM coding specific model
  - Uses RAG from local knowledge base created out of vector embeddings of documentations of Python, C, C++, Java, JS, etc
