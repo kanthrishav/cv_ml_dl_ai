@@ -1,5 +1,7 @@
 # OLLAMA
 
+<img width="1200" height="630" alt="image" src="https://github.com/user-attachments/assets/8574c0e3-fe2a-4732-81ca-d43843bba51e" />
+
 ## Overview 
 
 Ollama is an open-source software that simplifies running and managing large language models (LLMs) directly on your local computer, rather than relying on cloud-based services. It provides a user-friendly way to download, customize, and interact with a variety of LLMs, such as those from Meta and Mistral, ensuring data privacy by keeping all processing on your own device. Ollama also offers a command-line interface (CLI) and an API for programmatic access, making it a versatile tool for developers, data scientists, and individuals
@@ -266,12 +268,12 @@ We could have used the upstream ollama/ollama image. On Jetson, it’s safer to 
 		ollama run starcoder2:7b
 
 Similarly, 
-Stable-Code 3B
-Llama 3.1 8B Instruct
-Phi-4
-Granite-3.2 8B
-Llama3-ChatQA 8B
-MiniCPM-V
-LLaVA 7B
-Moondream 2
+3. Stable-Code 3B
+4. Llama 3.1 8B Instruct
+5. Phi-4
+6. Granite-3.2 8B
+7. Llama3-ChatQA 8B
+8. MiniCPM-V
+9. LLaVA 7B
+10. Moondream 2
 
