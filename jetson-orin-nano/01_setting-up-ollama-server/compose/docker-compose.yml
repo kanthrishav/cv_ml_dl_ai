@@ -1,0 +1,73 @@
+services:
+  ollama:
+    image: dustynv/ollama:r36.4.0
+    container_name: ollama
+    restart: unless-stopped
+
+    # Publish the Ollama HTTP API
+    ports:
+      - "11434:11434"
+
+    # This image expects host/port via env, not a --host flag
+    environment:
+      OLLAMA_MODELS: /models
+      OLLAMA_HOST: 0.0.0.0:11434
+      OLLAMA_LOGS: /data/logs/ollama.log
+
+    # Keep ALL data on the SSD
+    volumes:
+      - /ssd/ollama/models:/models
+      - /ssd/ollama/data:/root/.ollama
+      - /ssd/ollama/logs:/data/logs
+
+    # Make the server the long-lived foreground process (PID 1)
+    entrypoint: ["/bin/bash","-lc","exec ollama serve"]
+
+    # Enable GPU access on Jetson (works with NVIDIA Container Toolkit)
+    runtime: nvidia
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+
+    # Expose WebUI on host port 3000
+    ports:
+      - "3000:8080"
+
+    environment:
+      # Tell Open WebUI where Ollama lives (same Docker network, by service name)
+      - OLLAMA_BASE_URL=http://ollama:11434
+
+      # Optional but recommended on first boot: make WebUI know its own URL
+      # (Used by some features like web search/OAuth. You can update later in Settings.)
+      - WEBUI_URL=http://localhost:3000
+
+      # Enable the built-in web search tool (you can pick an engine in Settings later)
+      - ENABLE_WEB_SEARCH=true
+      # Default engine without an API key. For better results, switch to Brave/Kagi/Serper in Settings.
+      - WEB_SEARCH_ENGINE=duckduckgo
+
+      # Persisted settings note (from the official docs): the first time you set
+      # PersistentConfig variables via env, WebUI saves them internally and later restarts
+      # read the *saved* values unless you change them from the UI or disable persistence.
+      # (Just so you know why changing an env var later might not appear to do anything.)
+      - ENABLE_PERSISTENT_CONFIG=true
+      # --- HF reliability + SSD caching ---
+      - HF_HUB_DISABLE_HF_TRANSFER=1
+      - HF_HOME=/app/backend/data/hf-home
+      - TRANSFORMERS_CACHE=/app/backend/data/hf-cache
+    volumes:
+      # Put ALL app state on SSD
+      - /ssd/openwebui/data:/app/backend/data
+
+      # Optional read-only library of docs/images you want to *reference* directly
+      - /ssd/openwebui/library:/library:ro
+
+    # Put both containers on the same default compose network so "ollama" DNS works
+    depends_on:
+      - ollama
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    runtime: nvidia

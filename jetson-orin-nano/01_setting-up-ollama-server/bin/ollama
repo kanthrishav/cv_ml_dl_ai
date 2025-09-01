@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# This wrapper forwards all arguments to the "ollama" CLI inside the container.
+# It keeps your host clean and ensures all data lives under /ssd/ollama.
+set -euo pipefail
+
+# Container name set in docker-compose.yml
+NAME=ollama
+
+# If the container isn't running, attempt to start it
+if ! docker ps --format '{{.Names}}' | grep -qx "$NAME" ; then
+  echo "[wrapper] Starting $NAME container..." >&2
+  ( cd /ssd/ollama/compose && docker compose up -d ) >/dev/null
+  sleep 1
+fi
+
+# If user exported OLLAMA_HOST, prefer API mode (no exec, works from remote hosts)
+if [ "${OLLAMA_HOST:-}" != "" ]; then
+  # Forward to API by calling the CLI inside the container with OLLAMA_HOST set
+  docker exec -e OLLAMA_HOST="$OLLAMA_HOST" -it "$NAME" ollama "$@"
+else
+  # Default: run the CLI directly inside the container
+  docker exec -it "$NAME" ollama "$@"
+fi
