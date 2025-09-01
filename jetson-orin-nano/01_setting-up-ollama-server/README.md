@@ -2,6 +2,10 @@
 
 <img width="1200" height="630" alt="image" src="https://github.com/user-attachments/assets/8574c0e3-fe2a-4732-81ca-d43843bba51e" />
 
+
+https://github.com/user-attachments/assets/920d8ddd-b529-4203-ada7-4a97d128e0d6
+
+
 ## Overview 
 
 Ollama is an open-source software that simplifies running and managing large language models (LLMs) directly on your local computer, rather than relying on cloud-based services. It provides a user-friendly way to download, customize, and interact with a variety of LLMs, such as those from Meta and Mistral, ensuring data privacy by keeping all processing on your own device. Ollama also offers a command-line interface (CLI) and an API for programmatic access, making it a versatile tool for developers, data scientists, and individuals
