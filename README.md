@@ -42,10 +42,17 @@ The mini-projects present in this repo are -
 6.  Near real time edge segmentation using pretrained LRASPP MobileNetV3 together with adding the detector and classifier from the last two projects (raspberry pi)
 7.  Eye-blink detection using openCV (raspberry pi)
 8.  Inferencing LLM models using ollama CLI
+
+<img width="1200" height="630" alt="image" src="https://github.com/user-attachments/assets/8574c0e3-fe2a-4732-81ca-d43843bba51e" />
+
+
+https://github.com/user-attachments/assets/920d8ddd-b529-4203-ada7-4a97d128e0d6
+
+  
 9.  Inferencing LLM models using ollama server and Open Web UI
-10. Setting up vision inferencing Stable Diffusion UI
-11. Setting up and creating workflows using ComfyUI to create deterministic workflows to perform vision tasks with numerous model checkpoints, Lora adaptors, embeddings, etc for image generation
-12. Building a generic coding agent using the ollama backend
+11. Setting up vision inferencing Stable Diffusion UI
+12. Setting up and creating workflows using ComfyUI to create deterministic workflows to perform vision tasks with numerous model checkpoints, Lora adaptors, embeddings, etc for image generation
+13. Building a generic coding agent using the ollama backend
  - Has access to multiple 7B to 8B LLM coding specific model
  - Uses RAG from local knowledge base created out of vector embeddings of documentations of Python, C, C++, Java, JS, etc
  - Creates github repo,
