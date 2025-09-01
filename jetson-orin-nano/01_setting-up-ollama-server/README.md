@@ -268,12 +268,21 @@ We could have used the upstream ollama/ollama image. On Jetson, it’s safer to 
 		ollama run starcoder2:7b
 
 Similarly, 
+
 3. Stable-Code 3B
+
 4. Llama 3.1 8B Instruct
+
 5. Phi-4
+
 6. Granite-3.2 8B
+
 7. Llama3-ChatQA 8B
+
 8. MiniCPM-V
+
 9. LLaVA 7B
+
 10. Moondream 2
+
 
