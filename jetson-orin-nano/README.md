@@ -78,34 +78,7 @@ Run the shell script : check_firmware_os_bootloader.sh
 
 On some Jetson kernels, AppArmor isn’t enabled ⇒ many snaps won’t run. These commands detect that and either enable what we can (user namespaces), or tell you to prefer Flatpak. (We’ll set up Flatpak in Set 4.)
 
-		set -euo pipefail
-
-		echo "=== Install & enable snapd ==="
-		sudo apt update
-		sudo apt install -y snapd apparmor apparmor-utils || true
-		sudo systemctl enable --now snapd
-
-		echo "=== Check kernel features needed by snap ==="
-		if command -v aa-status >/dev/null 2>&1; then
-		  aa-status || true
-		else
-		  echo "AppArmor tools not present."
-		fi
-
-		# Enable user namespaces (needed by snap sandboxes and Chromium/Firefox)
-		echo 'kernel.unprivileged_userns_clone=1' | sudo tee /etc/sysctl.d/90-userns.conf
-		sudo sysctl --system | grep -E 'userns_clone|app' || true
-
-		echo "=== Quick snap sanity ==="
-		snap version || true
-		snap debug sandbox-features || true
-
-		echo "=== Test-run a trivial snap ==="
-		# This will fail cleanly if confinement isn’t supported; that’s OK (we’ll use Flatpak then)
-		sudo snap install hello-world || true
-		snap run hello-world || true
-
-		echo "Note: if sandbox-features shows AppArmor not enabled, prefer Flatpak (see Set 4)."
+Run the shell script : check_snapd_apparmor.sh
 
 If your log says something like these:
 
@@ -120,33 +93,9 @@ If you still want to double confirm you can run the following
 		cat /sys/module/apparmor/parameters/enabled  # likely: "No such file or directory"
 		dmesg -T | grep -i apparmor || echo "No AppArmor messages in dmesg"
 
-If AppArmor is not enabled in the kernel, you can go for flatpak installation (it uninstalls any Chromium you might have installed during first bootup)
+If AppArmor is not enabled in the kernel, you can go for flatpak based installation (it uninstalls any Chromium you might have installed during first bootup)
 
-		set -euo pipefail
-
-		sudo apt update
-		sudo apt install -y flatpak
-		sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-
-		# Remove browser snaps/apt packages so there’s only one copy on the system
-		sudo snap remove firefox chromium 2>/dev/null || true
-		sudo apt purge -y firefox chromium-browser 2>/dev/null || true
-		sudo apt autoremove -y || true
-
-		# Install browsers from Flathub (multi-arch, no AppArmor required)
-		sudo flatpak install -y flathub org.mozilla.firefox
-		sudo flatpak install -y flathub org.chromium.Chromium
-
-		# Make desktop launchers prefer Flatpak Firefox for xdg-open (optional helper)
-		cat <<'SH' | sudo tee /opt/ai/bin/open-url >/dev/null
-		#!/bin/sh
-		exec flatpak run org.mozilla.firefox "$@"
-		SH
-		sudo chmod +x /opt/ai/bin/open-url
-
-		echo "Flatpak browsers installed. Use:"
-		echo "  flatpak run org.mozilla.firefox"
-		echo "  flatpak run org.chromium.Chromium"
+Run the shell script : install_flatpak_firefox_chromium.sh
 
 ### 3. Setting up VNC and accessing Jetson via RealVNC
 
