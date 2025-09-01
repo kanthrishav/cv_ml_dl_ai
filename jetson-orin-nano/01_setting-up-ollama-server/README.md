@@ -256,13 +256,14 @@ We could have used the upstream ollama/ollama image. On Jetson, it’s safer to 
 
 ## Models - what to use and when to use
 
-| Model | Need | Pull | Start |
+1. Qwen2.5-Coder 7B  : Strong coding, modern
 
-|---|---|---|
+   		ollama pull qwen2.5-coder:7b
+		ollama run qwen2.5-coder:7b 
+2. StarCoder2 7B : OSS, balanced
 
-| Qwen2.5-Coder 7B | Strong coding, modern	| ollama pull qwen2.5-coder:7b	| ollama run qwen2.5-coder:7b |
-
-| StarCoder2 7B | OSS, balanced	| ollama pull starcoder2:7b | ollama run starcoder2:7b |
+		ollama pull starcoder2:7b
+		ollama run starcoder2:7b
 
 Similarly, 
 Stable-Code 3B
