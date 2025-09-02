@@ -1,0 +1,4 @@
+# Jetson JP6.x (CUDA 12.6) - CUDA-enabled wheels from Jetson index
+torch==2.5.0
+torchvision==0.19.1
+numpy==1.26.2

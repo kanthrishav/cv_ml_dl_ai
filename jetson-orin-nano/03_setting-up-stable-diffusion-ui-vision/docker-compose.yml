@@ -1,0 +1,40 @@
+version: "3.8"
+services:
+  stablediffui:
+    image: dustynv/stable-diffusion-webui:r36.4.0
+    container_name: stablediffUI
+    restart: unless-stopped
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - PIP_INDEX_URL=https://pypi.org/simple
+      - GRADIO_SERVER_NAME=0.0.0.0     # <- force bind to all interfaces
+      - GRADIO_SERVER_PORT=7860        # <- pin the port
+    volumes:
+      # Persist ALL user data (configs, outputs, etc) on SSD:
+      - /ssd/stablediffUI:/data
+      # Persist the *images default models path* too (so even if something writes there, it's on SSD and reused):
+      - /ssd/stablediffUI/models:/opt/stable-diffusion-webui/models
+      # Reuse your existing ComfyUI model library (read-only):
+      - /ssd/comfyui/models:/mnt/comfyui:ro
+      # (Optional) if you keep ControlNet inside ComfyUI, mount it where the extension expects:
+      - /ssd/comfyui/models/controlnet:/data/models/ControlNet:ro
+    ports:
+      - "7860:7860"
+    # Hard-override the default CMD so it cannot sneak in --xformers
+    command: >
+      bash -lc '
+        cd /opt/stable-diffusion-webui &&
+        python3 launch.py
+          --listen --port=7860 --api --skip-install --no-download-sd-model
+          --data-dir /data
+          --opt-sdp-no-mem-attention
+          --ckpt-dir /mnt/comfyui/checkpoints
+          --vae-dir /mnt/comfyui/vae
+          --lora-dir /mnt/comfyui/loras
+          --esrgan-models-path /mnt/comfyui/upscale_models
+          --clip-models-path /mnt/comfyui/clip
+          --embeddings-dir /mnt/comfyui/embeddings
+      '
+
