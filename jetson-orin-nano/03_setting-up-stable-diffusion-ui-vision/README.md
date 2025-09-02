@@ -2,7 +2,8 @@
 
 ## Overview
 
-<img width="1918" height="973" alt="image" src="https://github.com/user-attachments/assets/fc58328f-eba1-4e97-906c-3a4bf9862f7e" />
+<img width="1917" height="973" alt="image" src="https://github.com/user-attachments/assets/bf9d8635-bba0-47f0-bbaf-f4f15b688de6" />
+
 
 A Stable Diffusion UI is a user-friendly, browser-based interface for the Stable Diffusion AI model, which allows users to generate and edit images without needing to use code. The most well-known of these interfaces is the AUTOMATIC1111 Stable Diffusion WebUI. 
 
