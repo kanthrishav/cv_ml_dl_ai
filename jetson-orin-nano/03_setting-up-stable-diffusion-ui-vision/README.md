@@ -28,7 +28,49 @@ Customizable parameters: Adjust various settings to control the generation proce
 
 ## Setup
 
+The setup is pretty simple if you force xFormers to not be installed because there is a major issue of xFormers on Jetson platforms with getting a CUDa enabled torch.
 
+So the following setup - 
+ - runs AUTOMATIC1111 Stable Diffusion WebUI in Docker on your Jetson
+ - forces xFormers OFF (and overrides images that would enable it by default)
+ - prevents any auto-downloads (like SD-1.5)
+ - reuses your ComfyUI models (checkpoints, VAE, LoRA, upscalers, CLIP, embeddings) from the sub-dir 04_setting-up-comfyui-vision
+ - binds Gradio on 0.0.0.0 so the UI opens from your LAN
 
+1. Create required directories
+
+       sudo mkdir -p /ssd/stablediffUI/{models,custom_nodes,input,output}
+       sudo chown -R "$USER:$USER" /ssd/stablediffUI
+   
+2. Bring up the docker container
+
+       docker compose -f /ssd/stablediffUI/docker-compose.yml pull
+       docker compose -f /ssd/stablediffUI/docker-compose.yml up -d
+
+3. Verifications
+    
+       # prove the running command has NO --xformers and DOES have our flags
+       docker inspect stablediffUI --format '{{.Path}} {{.Args}}'
+       
+       # show it bound properly & didn’t try to download a model
+       docker logs -n 200 stablediffUI | egrep -i 'Running on|local URL|Downloading:|xformers|attention' || true
+
+4. Daily usage
+
+       # start / stop
+       docker start stablediffUI
+       docker stop  stablediffUI
+       
+       # show status / logs
+       docker ps -a | grep stablediffUI
+       docker logs -f stablediffUI
+       
+       # apply config changes (edit compose, then:)
+       docker compose -f /ssd/stablediffUI/docker-compose.yml up -d
+       
+       # kill immediately (keeps volumes)
+       docker kill stablediffUI
+
+Thats it. You can start using it.
 
 
