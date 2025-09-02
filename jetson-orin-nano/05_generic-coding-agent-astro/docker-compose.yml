@@ -1,0 +1,73 @@
+services:
+  meilisearch:
+    image: getmeili/meilisearch:v1.10
+    container_name: astro-meilisearch
+    environment:
+      MEILI_ENV: development
+    volumes:
+      - /ssd/agents/astro/rag/meili:/meili_data
+    ports:
+      - "7700:7700"
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:v1.15.1
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+    volumes:
+      - ./logs/qdrant:/qdrant/storage
+
+
+  astro-indexer:
+    build:
+      context: ./indexer
+    container_name: astro-indexer
+    environment:
+      QDRANT_URL: http://qdrant:6333
+      MEILI_URL: http://meilisearch:7700
+      KB_ROOT: /kb
+      FASTEMBED_MODEL: BAAI/bge-small-en-v1.5
+      BATCH_SIZE: "128"
+      QDRANT_COLLECTION: kb_chunks
+    volumes:
+      - /ssd/kb:/kb:ro
+    ports:
+      - "8383:8383"
+    depends_on:
+      - qdrant
+      - meilisearch
+    restart: unless-stopped
+
+  astro-api:
+    build:
+      context: ./api
+    container_name: astro-api
+    environment:
+      VENV_POOL_ROOT: /workspaces/.venv-pool
+      SSH_AUTH_SOCK: /ssh-agent
+      OLLAMA_HOST: http://host.docker.internal:11434
+      KB_INDEX_URL: http://astro-indexer:8383
+      WORKSPACES_ROOT: /workspaces/astro_repos
+      RUN_LOG_DIR: /logs
+      GIT_USER_NAME: astro-agent
+      GIT_USER_EMAIL: astro@example.local
+      GIT_REMOTE: git@github.com:kanthrishav/astro_repos.git
+      GIT_SSH_COMMAND: ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes
+      RAG_SEARCH_URL: http://astro-indexer:8383/search
+    volumes:
+      #- /ssd/agents/astro/workspaces:/workspaces
+      #- /ssd/agents/astro/logs:/logs
+      - ${SSH_AUTH_SOCK:-/tmp/ssh-agent-placeholder}:/ssh-agent
+      - /ssd/agents/astro/workspaces:/workspaces
+      - /ssd/agents/astro/logs:/logs
+    ports:
+      - "8088:8088"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - astro-indexer
+      - qdrant
+      - meilisearch
+    restart: unless-stopped
+

@@ -1,0 +1,6 @@
+# /ssd/agents/astro/api/requirements.txt
+fastapi==0.111.1
+uvicorn[standard]==0.30.3
+pydantic==2.8.2
+httpx==0.27.0
+GitPython==3.1.43

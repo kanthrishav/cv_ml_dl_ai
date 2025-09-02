@@ -1,0 +1,12 @@
+services:
+  astro-api:
+    environment:
+      - GIT_SSH_COMMAND=ssh -F /home/astro/.ssh/config
+      - WORKSPACES_ROOT=/workspaces/astro_repos
+      - RUN_LOG_DIR=/logs
+      - GIT_USER_NAME=astro-agent
+      - GIT_USER_EMAIL=astro@example.local
+      - GIT_REMOTE=git@github.com:kanthrishav/astro_repos.git
+    volumes:
+      - ${HOME}/.ssh:/home/astro/.ssh:ro
+
