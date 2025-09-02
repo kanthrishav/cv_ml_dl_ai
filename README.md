@@ -73,30 +73,32 @@ https://github.com/user-attachments/assets/d3562c5a-5be4-4555-8d1e-7814312debb1
 
 ******************************************************************************************************************************************************************************************************************
 
+## 7. Setting up vision inferencing Stable Diffusion UI
 
-## 7.  Near real time image classification using transfer learning to fine tune lightweight MobileNetV2 on openimages and perform inference with TFLite (raspberry pi)
-
-******************************************************************************************************************************************************************************************************************
-
-
-## 8.  Near real time object detection using yolov5n and yolov5s and classifying using fine tuned MobileNetV2 from previous project (raspberry pi)
+<img width="1917" height="973" alt="image" src="https://github.com/user-attachments/assets/bf9d8635-bba0-47f0-bbaf-f4f15b688de6" />
 
 ******************************************************************************************************************************************************************************************************************
 
 
-## 9.  Near real time edge segmentation using pretrained LRASPP MobileNetV3 together with adding the detector and classifier from the last two projects (raspberry pi)
+## 8.  Near real time image classification using transfer learning to fine tune lightweight MobileNetV2 on openimages and perform inference with TFLite (raspberry pi)
 
 ******************************************************************************************************************************************************************************************************************
 
 
-## 10.  Eye-blink detection using openCV (raspberry pi)
+## 9.  Near real time object detection using yolov5n and yolov5s and classifying using fine tuned MobileNetV2 from previous project (raspberry pi)
 
 ******************************************************************************************************************************************************************************************************************
 
 
-## 11. Setting up vision inferencing Stable Diffusion UI
+## 10.  Near real time edge segmentation using pretrained LRASPP MobileNetV3 together with adding the detector and classifier from the last two projects (raspberry pi)
 
 ******************************************************************************************************************************************************************************************************************
+
+
+## 11.  Eye-blink detection using openCV (raspberry pi)
+
+******************************************************************************************************************************************************************************************************************
+
 
 ## 12. Building a generic coding agent using the ollama backend
  - Has access to multiple 7B to 8B LLM coding specific model
