@@ -80,27 +80,38 @@ https://github.com/user-attachments/assets/d3562c5a-5be4-4555-8d1e-7814312debb1
 ******************************************************************************************************************************************************************************************************************
 
 
-## 8.  Near real time image classification using transfer learning to fine tune lightweight MobileNetV2 on openimages and perform inference with TFLite (raspberry pi)
+## 8.  RAG based Chatbot with ollama backend
+
+<img width="1917" height="981" alt="image" src="https://github.com/user-attachments/assets/fc099b69-2493-4331-8b80-e2b2cba86c69" />
+
+
+https://github.com/user-attachments/assets/1fb88318-4097-4944-8b43-df97fe9744c7<img width="792" height="135" alt="image" src="https://github.com/user-attachments/assets/898c7640-b46d-41a9-9918-d4809ece6b0d" />
+
 
 ******************************************************************************************************************************************************************************************************************
 
 
-## 9.  Near real time object detection using yolov5n and yolov5s and classifying using fine tuned MobileNetV2 from previous project (raspberry pi)
+## 9.  Near real time image classification using transfer learning to fine tune lightweight MobileNetV2 on openimages and perform inference with TFLite (raspberry pi)
 
 ******************************************************************************************************************************************************************************************************************
 
 
-## 10.  Near real time edge segmentation using pretrained LRASPP MobileNetV3 together with adding the detector and classifier from the last two projects (raspberry pi)
+## 10.  Near real time object detection using yolov5n and yolov5s and classifying using fine tuned MobileNetV2 from previous project (raspberry pi)
 
 ******************************************************************************************************************************************************************************************************************
 
 
-## 11.  Eye-blink detection using openCV (raspberry pi)
+## 11.  Near real time edge segmentation using pretrained LRASPP MobileNetV3 together with adding the detector and classifier from the last two projects (raspberry pi)
 
 ******************************************************************************************************************************************************************************************************************
 
 
-## 12. Building a generic coding agent using the ollama backend
+## 12.  Eye-blink detection using openCV (raspberry pi)
+
+******************************************************************************************************************************************************************************************************************
+
+
+## 13. Building a generic coding agent using the ollama backend
  - Has access to multiple 7B to 8B LLM coding specific model
  - Uses RAG from local knowledge base created out of vector embeddings of documentations of Python, C, C++, Java, JS, etc
  - Creates github repo,
