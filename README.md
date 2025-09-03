@@ -3,6 +3,27 @@
 This repo contains my experiments with SBC and SOCs like the Rapsberry PI 5 and Jetson Orin Nano 
 
 The mini-projects present in this repo are - 
+1. Real time document scanning from the video feed & text extraction, arbitrary position, arbitrary orientation (RPI)
+2. Near real time automatic brand detection and counting (RPI)
+3. Real time depth estimation (RPI)
+4. Inferencing LLM models using ollama CLI (Jetson)
+5. Inferencing LLM models using ollama server and Open Web UI (Jetson)
+6. Setting up and creating workflows using ComfyUI to create deterministic workflows to perform vision tasks (Jetson)
+7. Setting up vision inferencing on Stable Diffusion UI (Jetson)
+8. RAG based Chatbot with ollama backend (Jetson)
+9. Near real time image classification using transfer learning to fine tune lightweight MobileNetV2 on openimages and perform inference with TFLite (RPI)
+10. Near real time object detection using yolov5n and yolov5s and classifying using fine tuned MobileNetV2 from previous project (RPI)
+11. Near real time edge segmentation using pretrained LRASPP MobileNetV3 together with adding the detector and classifier from the last two projects (RPI)
+12. Eye-blink detection using openCV (RPI)
+13. Building a generic coding agent using the ollama backend (Jetson)
+
+Hardware components used : 
+1. Raspberry Pi 5 8GB + 64 GB microSD
+2. Jetson Orin Nano Super Dev Kit 8 GB + 1 TB SSD + 128 GB microSD
+3. 5 MP Raspberry Pi Camera Module
+4. Raspberry Pi AI camera module (sensor Sony IMX500)
+5. Raspberry Pi High Quality Camera with 6mm lens
+6. OakDLite from Luxonis and OpenCV
 
 ## 1. Real time scanning of document placed at arbitraty location, arbitrary orientation from a video feed and extracting text from it using Raspberry Pi 5, 5 MP camera and RPI AI camera
  - This involves use of edge detection and image processing algorithms like Sobel, Canny and CLAHE
