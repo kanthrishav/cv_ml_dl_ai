@@ -1,0 +1,21 @@
+* { box-sizing: border-box; }
+body { font-family: system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 0; background: #0b0f14; color: #e8eef5; }
+header { padding: 16px 20px; border-bottom: 1px solid #1f2a36; display: flex; align-items: baseline; gap: 16px; }
+h1 { margin: 0; font-size: 20px; }
+#stats { color: #8ea6bf; }
+.panel { padding: 16px 20px; border-bottom: 1px solid #1f2a36; }
+h2 { margin: 0 0 12px 0; font-size: 16px; color: #a0c6ff; }
+.grid { display: grid; grid-template-columns: repeat(6, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
+label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #a7bed3; }
+input, textarea, select { background: #09121b; color: #e8eef5; border: 1px solid #1c2a3a; border-radius: 8px; padding: 8px; }
+button { background: #1b65d6; color: white; padding: 8px 12px; border: 0; border-radius: 8px; cursor: pointer; }
+button:hover { background: #2b7af2; }
+button.danger { background: #b53737; }
+button.danger:hover { background: #d04444; }
+.status { margin-top: 8px; color: #8ea6bf; }
+#answer { margin-top: 12px; white-space: pre-wrap; background: #0a1520; padding: 12px; border: 1px solid #1c2a3a; border-radius: 8px; }
+#citations { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.cite { background: #0a1520; border: 1px solid #1c2a3a; border-radius: 8px; padding: 10px; font-size: 12px; }
+.cite .src { color: #a0c6ff; font-weight: 600; }
+.cite .score { color: #8ea6bf; }
+

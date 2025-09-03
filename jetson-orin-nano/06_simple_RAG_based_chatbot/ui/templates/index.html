@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>ULLU — Research UI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+  <header>
+    <h1>ULLU — Research UI</h1>
+    <div id="stats">Docs: <span id="docs">0</span> • Chunks: <span id="chunks">0</span></div>
+  </header>
+
+  <section class="panel">
+    <h2>Index Documents</h2>
+    <input id="files" type="file" multiple accept=".txt,.md,.pdf,.csv,.json,.log"/>
+    <button id="btnIndex">Index</button>
+    <button id="btnReset" class="danger">Reset Index</button>
+    <div id="indexStatus" class="status"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Query</h2>
+    <div class="grid">
+      <label>Query<br><textarea id="query" rows="3" placeholder="Ask a question..."></textarea></label>
+      <label>RAG
+        <select id="rag">
+          <option value="true" selected>On</option>
+          <option value="false">Off</option>
+        </select>
+      </label>
+      <label>Top-K <input id="topk" type="number" value="3" min="1" max="20"/></label>
+      <label>Model <input id="model" value="llama3"/></label>
+      <label>Temperature <input id="temp" type="number" value="0.2" step="0.1" min="0" max="2"/></label>
+      <label>Max tokens <input id="maxtok" type="number" value="512" min="64" max="4096"/></label>
+    </div>
+    <label>System prompt (optional)
+      <textarea id="system" rows="2" placeholder="You are a helpful assistant..."></textarea>
+    </label>
+    <button id="btnAsk">Ask</button>
+    <div id="answer"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Citations</h2>
+    <div id="citations"></div>
+  </section>
+
+  <script src="/static/main.js"></script>
+</body>
+</html>
+
