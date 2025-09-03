@@ -9,7 +9,6 @@ services:
     ports:
       - "9150:9150"
     environment:
-      # If you run Ollama on the host (Linux), this lets the container reach it.
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
       - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
       - CHUNK_SIZE=800
@@ -33,7 +32,6 @@ services:
     ports:
       - "9151:9151"
     environment:
-      # UI computes API base at runtime from window.location
       - NO_PROXY=127.0.0.1,localhost
       - no_proxy=127.0.0.1,localhost
     extra_hosts:
