@@ -39,7 +39,7 @@ Check if it working or not
       
       Output : { "status": "ok", "docs": 0, "chunks": 0 }
 
-Open the UI : http://<your-host>:9151
+Open the UI : http://"your-local-host":9151
 
 
 
