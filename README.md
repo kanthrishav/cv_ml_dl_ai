@@ -1,6 +1,6 @@
 # Edge Vision and AI Inference
 
-This repo contains my experiments with SBC and SOCs like the Rapsberry PI 5 and Jetson Orin Nano 
+This repo contains my experiments with SBC and SOMs like the Rapsberry PI 5 and Jetson Orin Nano 
 
 The mini-projects present in this repo are - 
 1. Real time document scanning from the video feed & text extraction, arbitrary position, arbitrary orientation (RPI)
