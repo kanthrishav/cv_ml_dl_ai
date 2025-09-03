@@ -85,7 +85,7 @@ https://github.com/user-attachments/assets/d3562c5a-5be4-4555-8d1e-7814312debb1
 <img width="1917" height="981" alt="image" src="https://github.com/user-attachments/assets/fc099b69-2493-4331-8b80-e2b2cba86c69" />
 
 
-https://github.com/user-attachments/assets/1fb88318-4097-4944-8b43-df97fe9744c7<img width="792" height="135" alt="image" src="https://github.com/user-attachments/assets/898c7640-b46d-41a9-9918-d4809ece6b0d" />
+https://github.com/user-attachments/assets/1fb88318-4097-4944-8b43-df97fe9744c7
 
 
 ******************************************************************************************************************************************************************************************************************
