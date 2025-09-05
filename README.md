@@ -113,26 +113,28 @@ https://github.com/user-attachments/assets/1fb88318-4097-4944-8b43-df97fe9744c7
 
 
 ## 9.  Near real time image classification using transfer learning to fine tune lightweight MobileNetV2 on openimages and perform inference with TFLite (raspberry pi)
-
+ - coming soon
 ******************************************************************************************************************************************************************************************************************
 
 
 ## 10.  Near real time object detection using yolov5n and yolov5s and classifying using fine tuned MobileNetV2 from previous project (raspberry pi)
-
+ - coming soon
 ******************************************************************************************************************************************************************************************************************
 
 
 ## 11.  Near real time edge segmentation using pretrained LRASPP MobileNetV3 together with adding the detector and classifier from the last two projects (raspberry pi)
-
+ - coming soon
 ******************************************************************************************************************************************************************************************************************
 
 
 ## 12.  Eye-blink detection using openCV (raspberry pi)
-
+ - coming soon
 ******************************************************************************************************************************************************************************************************************
 
 
 ## 13. Building a generic coding agent using the ollama backend
+ - work in progress
+
  - Has access to multiple 7B to 8B LLM coding specific model
  - Uses RAG from local knowledge base created out of vector embeddings of documentations of Python, C, C++, Java, JS, etc
  - Creates github repo,
