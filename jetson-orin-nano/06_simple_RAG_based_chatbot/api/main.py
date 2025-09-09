@@ -182,7 +182,7 @@ def load_file_to_text(up: UploadFile) -> str:
             return content.decode("latin-1", errors="ignore")
 
 # -------------------------- LLM (Ollama) or fallback
-async def ollama_generate(prompt: str, model: str = "llama3", temperature: float = 0.2, max_tokens: int = 512) -> str:
+async def ollama_generate(prompt: str, model: str = "llama3.2:3b", temperature: float = 0.2, max_tokens: int = 512) -> str:
     url = f"{OLLAMA_BASE_URL.rstrip('/')}/api/generate"
     payload = {
         "model": model,
