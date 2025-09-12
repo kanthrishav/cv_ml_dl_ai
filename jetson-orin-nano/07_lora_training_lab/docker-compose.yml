@@ -1,0 +1,21 @@
+services:
+  lora_train:
+    # Use the built image (or build it from the Dockerfile)
+    image: lora-trainer:jetson
+    build:
+      context: .               # context path where Dockerfile is located (adjust if needed)
+      dockerfile: scripts/Dockerfile  # path to your Dockerfile (e.g., in ./scripts)
+    container_name: lora_train      # optional: name the container for consistency
+    volumes:
+      - /ssd/lora_lab:/workspace            # mount project folder to container
+      - /ssd/comfyui/models/checkpoints:/workspace/models/checkpoints:ro  # mount models (read-only)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all                  # use all available GPUs (or use "1" for a single GPU)
+              capabilities: [gpu]         # ensure the container has GPU capability:contentReference[oaicite:0]{index=0}
+    restart: unless-stopped               # auto-restart container on reboot or failures
+    command: tail -f /dev/null            # keep container running (idle) for exec/shell access
+
